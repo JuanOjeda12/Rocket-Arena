@@ -14,7 +14,7 @@ export class PlayerHub{
     const email=this.form.elements.email.value.trim(),password=this.form.elements.password.value;
     const logged=this.mode==='signup'?await this.account.signup(email,password,this.form.elements.username.value.trim()):!!await this.account.login(email,password);
     this.form.elements.password.value='';
-    if(!logged){get('account-error').textContent='Revisa tu correo para confirmar la cuenta y luego inicia sesión.';this.mode='login';this.renderAuth();return}
+    if(!logged){this.mode='confirm';this.renderAuth();return}
     this.adopt();this.closeAuth();this.afterAuth?.();
    }catch(error){get('account-error').textContent=error.message}finally{get('account-submit').disabled=!this.account.configured}
   };
@@ -22,7 +22,11 @@ export class PlayerHub{
   get('account-guest').onclick=()=>{this.guestAccepted=true;this.closeAuth();this.afterAuth?.()};get('account-close').onclick=()=>this.closeAuth();
   addEventListener('keydown',e=>{if(e.code==='Escape'&&!this.modal.hidden){e.preventDefault();e.stopImmediatePropagation();this.closeAuth()}},true);
   addEventListener('online',()=>this.account.flush());
-  this.ready=this.account.restore().then(()=>this.adopt());
+  this.ready=this.account.restore().then(()=>{this.adopt();if(this.account.authError){this.modal.hidden=false;this.mode='login';this.renderAuth();get('account-error').textContent=this.account.authError}});
+  addEventListener('storage',async e=>{
+   if(e.key!=='rocket-auth-session'||!e.newValue||this.account.user)return;
+   try{this.account.session=JSON.parse(e.newValue);await this.account.restore();if(this.account.user){this.adopt();if(!this.modal.hidden){this.closeAuth();this.afterAuth?.()}}}catch{}
+  });
  }
  get progress(){return this.account.data.progress}
  get canPlay(){return!!this.account.user||this.guestAccepted}
@@ -36,6 +40,8 @@ export class PlayerHub{
  openAuth(after){this.afterAuth=after;this.mode='signup';this.modal.querySelector('#account-error').textContent='';this.modal.hidden=false;this.renderAuth();this.form.elements[this.account.configured?'username':'email'].focus()}
  closeAuth(){this.modal.hidden=true;this.form.elements.password.value=''}
  renderAuth(){
+  const confirming=this.mode==='confirm';this.form.hidden=confirming;this.modal.querySelector('#account-switch').hidden=confirming;
+  if(confirming){this.modal.querySelector('#account-title').textContent='REVISA TU CORREO';this.modal.querySelector('#account-info').textContent='Revisa tu bandeja de entrada y confirma tu email. Si no aparece, mira en spam. El enlace te llevará a Rocket Arena e iniciará tu sesión automáticamente.';return}
   const signup=this.mode==='signup';this.modal.querySelector('#account-title').textContent=signup?'CREAR CUENTA':'INICIAR SESIÓN';this.modal.querySelector('#account-name-row').hidden=!signup;this.form.elements.username.required=signup;this.form.elements.password.autocomplete=signup?'new-password':'current-password';
   this.modal.querySelector('#account-submit').textContent=signup?'CREAR CUENTA':'ENTRAR';this.modal.querySelector('#account-submit').disabled=!this.account.configured;this.modal.querySelector('#account-switch').textContent=signup?'YA TENGO CUENTA':'CREAR UNA CUENTA';
   this.modal.querySelector('#account-info').textContent=this.account.configured?'Guarda tu auto, controles, rango y experiencia entre dispositivos. Como invitado se guardan solo en este navegador.':'Las cuentas online necesitan conectar tu proyecto gratuito de Supabase. Mientras tanto puedes jugar y guardar tu progreso como invitado en este navegador.';

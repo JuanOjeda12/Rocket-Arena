@@ -28,8 +28,25 @@ export class AccountStore{
   if(this.session.expires_at<Date.now()/1000+60){if(!this.refreshing)this.refreshing=this.request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:this.session.refresh_token}}).then(s=>this.saveSession(s)).finally(()=>this.refreshing=null);await this.refreshing}
   return this.session.access_token;
  }
+ async confirmFromURL(){
+  if(!this.configured||!globalThis.location?.hash)return false;
+  const params=new URLSearchParams(location.hash.slice(1));
+  if(!params.has('access_token')&&!params.has('error')&&!params.has('error_description'))return false;
+  // Remove credentials from the address before making network requests.
+  globalThis.history?.replaceState(null,'',location.pathname+location.search);
+  if(params.has('error')||params.has('error_description'))throw Error('El enlace de confirmación caducó o no es válido. Inicia sesión si ya confirmaste tu cuenta.');
+  const access_token=params.get('access_token'),refresh_token=params.get('refresh_token');
+  if(!access_token||!refresh_token)throw Error('El enlace de confirmación está incompleto.');
+  const user=await this.request('/auth/v1/user',{token:access_token});
+  if(!user?.id)throw Error('No se pudo verificar la cuenta.');
+  if(!this.user)write('rocket-player:guest',{data:this.data,dirty:false,savedAt:Date.now()});
+  this.user=user;this.saveSession({access_token,refresh_token,user,expires_in:Number(params.get('expires_in'))||3600});
+  await this.load();return true;
+ }
  async restore(){
-  if(!this.configured||!this.session)return;
+  if(!this.configured)return;
+  try{if(await this.confirmFromURL())return}catch(error){this.authError=error.message;this.statusText(error.message);return}
+  if(!this.session)return;
   try{const token=await this.token();this.user=await this.request('/auth/v1/user',{token});await this.load()}
   catch(error){if(error.status===401||error.status===400){this.user=null;this.saveSession(null);this.statusText('Vuelve a iniciar sesión')}else if(this.session?.user?.id){this.user=this.session.user;this.data=normalize(read(this.key())?.data);this.statusText('Sin conexión · guardado local pendiente')}}
  }
@@ -46,7 +63,7 @@ export class AccountStore{
  }
  async signup(email,password,username){
   if(!this.user)write('rocket-player:guest',{data:this.data,dirty:false,savedAt:Date.now()});const guest=this.data;
-  const s=await this.request('/auth/v1/signup',{method:'POST',body:{email,password,data:{username:cleanProfile({name:username}).name}}});
+  const s=await this.request('/auth/v1/signup?redirect_to='+encodeURIComponent('https://rocket-arena.com/'),{method:'POST',body:{email,password,data:{username:cleanProfile({name:username}).name}}});
   if(s?.user?.id)write('rocket-new-profile:'+s.user.id,normalize({...guest,garage:{...guest.garage,name:username}}));
   if(s?.access_token){this.user=s.user;this.saveSession(s);try{await this.load();return true}catch(error){this.user=null;this.saveSession(null);this.data=guest;throw error}}return false;
  }
