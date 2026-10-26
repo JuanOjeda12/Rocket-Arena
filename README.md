@@ -52,3 +52,12 @@ La conexión ONLINE queda preparada para un servidor HTTPS/WSS externo, pero no 
 ## Configuración de controles
 
 Debajo de Garaje está Configuración. Puedes elegir controles originales con mouse o PC sin mouse: WASD para conducir/orientar, Espacio para salto, Shift izquierdo para turbo, X para derrape/air roll, Q/E para air roll directo y C para cámara. Pulsa una asignación y luego una tecla o botón para personalizarla; Esc cancela, Supr borra. La selección se guarda en el navegador. Esc siempre abre el menú.
+
+## Rangos, puntuación y cuentas (0.5)
+
+Mantén TAB durante el juego para ver puntos, goles, asistencias, salvadas y tiros; al terminar aparecen automáticamente junto con XP y cambios de clasificación. Perfil muestra nivel, estadísticas y los tres rangos competitivos. Casual no cambia rangos. Competitivo tiene diez posicionamientos por modalidad y bots que aumentan de dificultad con tu MMR. Abandonar competitivo cuenta como derrota.
+
+Antes de configurar la nube se puede jugar como invitado y conservar progreso en este navegador. Para activar cuentas con email y contraseña y guardado entre dispositivos, sigue setup/README-CUENTAS.md y ejecuta setup/account-schema.sql en tu proyecto Supabase Free. Solo se ponen la URL del proyecto y su clave pública en account-config.js. No se incluyen contraseñas ni claves secretas. La carpeta ya incluye la URL y la clave pública del proyecto Supabase proporcionado. Su API responde y la confirmación de email está activada; sigue la guía de cuentas para configurar la URL del sitio y el envío de correos si hace falta. Aún debes probar el registro y guardado con tu propia cuenta.
+
+Los detalles de rangos, puntuación, XP y las fuentes oficiales investigadas están en setup/REGLAS-PROGRESO.md. Las fórmulas de este prototipo son propias y no afectan a Rocket League ni a cuentas de Epic Games.
+

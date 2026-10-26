@@ -1,6 +1,6 @@
 {
   "name": "rocket-arena-browser",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Browser car football with bots, garage and authoritative LAN rooms",
@@ -14,3 +14,4 @@
     "ws": "^8.18.3"
   }
 }
+
