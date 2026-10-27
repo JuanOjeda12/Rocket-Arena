@@ -1,5 +1,5 @@
 import {AccountStore} from './accounts.js';
-import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js';
+import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=nexto-final-20261027';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export class PlayerHub{
  constructor(apply){

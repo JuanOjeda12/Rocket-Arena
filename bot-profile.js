@@ -1,4 +1,4 @@
-export function botProfile(difficulty='competitive',skill=.55){
- const hard=difficulty==='competitive',s=hard?Math.max(0,Math.min(1,Number.isFinite(skill)?skill:.55)):0;
- return{skill:s,think:hard?.075-s*.045:.13,topSpeed:hard?21+s*2:17,prediction:hard?1.8+s*1.1:1.8,accuracy:hard?3+s*.8:2.7,air:hard&&s>=.62,speedFlip:hard&&s>=.72,jumpHeight:hard?2.5+s*4:2,boostAngle:hard?.15+s*.1:.16};
+export function botProfile(difficulty='competitive',skill=.65){
+ const hard=difficulty==='competitive',s=hard?Math.max(0,Math.min(1,Number.isFinite(skill)?skill:.65)):.25;
+ return{skill:s,think:hard?.045-s*.028:.085,topSpeed:hard?22+s:19,prediction:hard?2.4+s:2,accuracy:hard?3.5+s*1.5:3.2,air:hard&&s>=.55,carry:hard&&s>=.82,speedFlip:hard&&s>=.7,jumpHeight:hard?3+s*9:2.8,boostAngle:hard?.3+s*.15:.22};
 }

@@ -10,7 +10,7 @@ export class GoalEffects{
  }
  reset(){this.group.visible=false;this.age=10;this.seen=new Set()}
  seed(events=[]){for(const e of events)this.seen.add(e.id)}
- sync(events,ownSlot,onSave){for(const event of events||[]){if(this.seen.has(event.id))continue;this.seen.add(event.id);if(event.type==='goal')this.explode(event.end);else if(event.slot===ownSlot)onSave(event)} }
+ sync(events,ownSlot,onSave){for(const event of events||[]){if(this.seen.has(event.id))continue;this.seen.add(event.id);if(event.type==='goal')this.explode(event.end);else if(event.slot===ownSlot&&['save','epic-save'].includes(event.type))onSave(event)} }
  explode(end){
   this.end=end;this.age=0;this.group.visible=true;this.group.position.set(0,2.5,end*50.6);
   const color=end<0?0x39b7ff:0xff8b30;

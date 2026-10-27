@@ -1,13 +1,14 @@
 import * as T from './vendor/three.module.js';
-import {createVehicle} from './vehicle-view.js';import {CARS,cleanProfile} from './catalog.js';import {Simulation} from './simulation.js';
-import {GoalEffects} from './goal-effects.js';
+import {createVehicle} from './vehicle-view.js';import {CARS,cleanProfile} from './catalog.js';import {Simulation} from './simulation.js?v=nexto-final-20261027';
+import {GoalEffects} from './goal-effects.js?v=nexto-final-20261027';
 import {BallTrail} from './ball-trail.js';
 import {RenderBudget} from './render-budget.js';
 import {createControls} from './controls.js';
-import {PlayerHub} from './player-hub.js';
+import {PlayerHub} from './player-hub.js?v=nexto-final-20261027';
 import {scoreboardHTML} from './scoreboard.js';
 import {PostMatch} from './post-match.js';
-import {GameAudio} from './game-audio.js';
+import {GameAudio} from './game-audio.js?v=nexto-final-20261027';
+import {FlipResetIndicator} from './flip-reset-visual.js?v=nexto-final-20261027';
 import {createBoostPads} from './boost-pads.js';import {createPlaySession} from './play-session.js';import {NetClient,serverURL} from './net-client.js';import {constrainArenaCamera} from './arena-shape.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCamera,stadium}){
@@ -18,7 +19,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  let profile=cleanProfile(saved),screen='home',screenBack='home',running=false,keys={},ballCam=false,simulation=null,simulationReady=null,loading=false;
  let source='offline',network=null,networkOwner=false,slot=0,room=null,netA=null,netB=null,netAt=0,lastInput=0,transport='lan',serverBase=location.origin,serverInfo=null,selectedRoom=null,admissions=[];
  let hub=null,offlineOptions=null,tabHeld=false,scoreAt=0;
- const post=new PostMatch(),audio=new GameAudio(),podium=new T.Group();scene.add(podium);podium.visible=false;
+ const flipIndicator=new FlipResetIndicator(scene);const post=new PostMatch(),audio=new GameAudio(),podium=new T.Group();scene.add(podium);podium.visible=false;
  const podiumMaterial=new T.MeshStandardMaterial({color:0x172c40,metalness:.65,roughness:.3});
  for(let i=0;i<6;i++){const m=new T.Mesh(new T.CylinderGeometry(1.8,2,.3,32),podiumMaterial);podium.add(m)}
  addEventListener('pointerdown',()=>audio.unlock(),{passive:true});addEventListener('keydown',()=>audio.unlock());
@@ -48,7 +49,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
 
  function renderFront(){
   front.hidden=screen==='game';document.body.dataset.screen=screen;
-  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
+  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
   if(screen==='local-private')$('local-match').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);offline({blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:.12+Number(f.get('rank'))/7*.88,privateLocal:true})};
   if(screen==='garage'){
    $('driver-name').onchange=e=>{profile=cleanProfile({...profile,name:e.target.value});persist();preview.apply(profile)};
@@ -63,6 +64,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  front.addEventListener('click',e=>{const color=e.target.closest('[data-color]');if(color){profile.color=color.dataset.color;persist();preview.apply(profile);$('car-color').value=profile.color;return}const target=e.target.closest('[data-action]');if(target&&!target.disabled)action(target.dataset.action)});
  async function action(a){
   if(a==='post-toggle'){post.toggle();return}
+  if(a==='flip-indicator-toggle'){flipIndicator.toggle();audio.indicatorEnabled=flipIndicator.enabled;renderFront();return}
   if(a==='sound-toggle'){audio.toggle();renderFront();return}
   if(a==='local-private'){show('local-private','private');return}
   if(a==='play'){await hub.ready;if(!hub.canPlay){hub.openAuth(()=>show('play','home'));return}}
@@ -86,7 +88,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  }
  async function offline(options){
   if(loading)return;loading=true;show('loading');await hub.ready;hub.abandon();options={...options,skill:options.skill??(options.difficulty==='competitive'?hub.skill(`${options.blue}v${options.blue}`):.15)};offlineOptions=options;
-  try{simulation=await simulationReady;simulation.configure(options);slot=options.team===1?options.blue:0;simulation.assign(slot,profile,true);simulation.start();effects.reset();awardUntil=0;source='offline';room=null;stateA=stateB=simulation.view();hub.start(options,stateB);lastPhase='';label=options.training?'ENTRENAMIENTO':options.privateLocal?'PARTIDA PRIVADA LOCAL':`${options.difficulty==='competitive'?'COMPETITIVO':'CASUAL'} ${options.blue}v${options.orange}`;followCamera.reset();acc=0;session.start()}catch(e){toast(e.message);show('play','home')}finally{loading=false}
+  try{simulation=await simulationReady;simulation.configure(options);slot=options.team===1?options.blue:0;simulation.assign(slot,profile,true);simulation.start();effects.reset();awardUntil=0;source='offline';room=null;stateA=stateB=simulation.view();hub.start(options,stateB);lastPhase='';label=options.training?'ENTRENAMIENTO':options.privateLocal?(options.difficulty==='competitive'?'NEXTO · PRIVADA LOCAL':'PARTIDA PRIVADA LOCAL'):`${options.difficulty==='competitive'?'COMPETITIVO':'CASUAL'} ${options.blue}v${options.orange}`;followCamera.reset();acc=0;session.start()}catch(e){toast(e.message);show('play','home')}finally{loading=false}
  }
  function leaveRoom(){hub.abandon();screen='home';session.pause();network?.send('leave');network?.close();network=null;room=null;admissions=[];$('admission').hidden=true;source='offline';stateA=stateB=null;show('home');preview.apply(profile)}
  let roomEntries=[];
@@ -158,6 +160,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   $('speed').textContent=Math.round(Math.hypot(...own.velocity)*3.6);$('boost').textContent=Math.round(own.boost);$('boostbar').style.width=own.boost+'%';$('boost-track').setAttribute('aria-valuenow',Math.round(own.boost));
   $('boost-track').parentElement.style.setProperty('--boost',`${own.boost}%`);$('boost-track').parentElement.classList.toggle('boosting',own.isBoosting);
   const showGoal=running&&['kickoff','goal'].includes(b.phase);$('goal').hidden=!showGoal;$('goal').textContent=b.phase==='kickoff'?Math.max(1,Math.ceil(b.countdown)):b.goalEnd<0?'¡GOL AZUL!':'¡GOL NARANJA!';
+  flipIndicator.update(b.cars,views,frameDelta,b.phase,slot);
   $('replay').hidden=b.phase!=='replay';document.body.classList.toggle('replaying',b.phase==='replay');$('replay-progress').style.width=b.replayProgress*100+'%';
  }
  function paintPost(dt){
@@ -191,6 +194,8 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   else{ballTrail.clear();for(const v of views.values())v.setVisible(false);preview.setVisible(true,false);preview.flame.visible=false;ball.visible=false;ballShadow.visible=false;$('replay').hidden=true;$('goal').hidden=true;document.body.classList.remove('replaying');if(camera.fov!==36){camera.fov=36;camera.updateProjectionMatrix()}camera.position.set(1.7+Math.sin(elapsed*.12)*.06,.85,32.2);camera.up.set(0,1,0);camera.lookAt(-.45,.38,30)}
   $('match-scoreboard').hidden=!(tabHeld&&running&&inMatch);if(tabHeld&&running&&inMatch&&now-scoreAt>150){scoreAt=now;$('match-scoreboard').innerHTML=scoreboardHTML(stateB,slot)}
   if(screen==='results'&&post.finished)paintPost(dt);else podium.visible=false;
+  audio.indicatorEnabled=flipIndicator.enabled;
+  if(!inMatch||screen==='results'&&post.mode==='podium')flipIndicator.update([],views,dt,'menu',slot);
   audio.update(stateB,slot,inMatch&&(running||source==='network'||screen==='results'),dt);
   stadium.update(inMatch?stateB.remaining:300,inMatch?stateB.training:true,inMatch&&stateB.overtime,elapsed);
   renderer.render(scene,camera);

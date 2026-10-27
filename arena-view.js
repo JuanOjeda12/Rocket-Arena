@@ -22,8 +22,8 @@ export function addRoundedArena(scene){
  const {width:W,length:L,goal:G,goalHeight:GH,goalBack:B}=ARENA;
  for(const s of [-1,1]){
   const color=s===1?0x53beff:0xffa455,z=s*L;
-  for(const x of [-G,G]){box(.25,GH,.25,color,x,GH/2,z);for(let zz=L;zz<=B;zz+=1)line([[x,0,s*zz],[x,GH,s*zz]],0x4c7284,.5)}
-  box(G*2,.25,.25,color,0,GH,z);
+  for(const x of [-G,G]){box(.25,GH+.25,.25,color,x+Math.sign(x)*.125,(GH+.25)/2,z);for(let zz=L;zz<=B;zz+=1)line([[x,0,s*zz],[x,GH,s*zz]],0x4c7284,.5)}
+  box(G*2+.5,.25,.25,color,0,GH+.125,z);
   for(let x=-G;x<=G;x+=1)line([[x,.05,s*(B-.015)],[x,GH,s*(B-.015)]],0x668b9b,.7);
   for(let y=1;y<GH;y++)line([[-G,y,s*(B-.015)],[G,y,s*(B-.015)]],0x668b9b,.7);
   box(G*2,.08,B-L,0x1e4547,0,-.03,s*(L+B)/2);

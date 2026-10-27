@@ -1,6 +1,6 @@
 import {incomingShot} from './ball-prediction.js';
 export class MatchEvents{
- constructor(){this.serial=0;this.time=0;this.list=[];this.resetRound()}
+ constructor(){this.serial=0;this.time=0;this.list=[];this.resetCounts={};this.resetRound()}
  resetRound(){this.pending=[];this.lastAward=new Map();this.contactCooldown=new Map();this.list=[]}
  emit(type,details){const event={id:++this.serial,type,...details};this.list.push(event);this.list=this.list.slice(-12);return event}
  goal(end,position){this.pending=[];this.emit('goal',{end,position:[...position],team:end<0?0:1})}
@@ -8,6 +8,8 @@ export class MatchEvents{
   this.time+=dt;
   if(after.goal){this.pending=[];return}
   for(const car of after.cars){
+   const previous=before.cars.find(c=>c.slot===car.slot);
+   if(car.wheelBallContacts>=3&&!(previous?.wheelBallContacts>=3)&&car.hasFlip){this.resetCounts[car.slot]=(this.resetCounts[car.slot]||0)+1;this.emit('flip-reset',{slot:car.slot,position:[...car.position]})}
    if(car.ballTouchAge<0||car.ballTouchAge>dt*1.5||car.isDemoed||this.time-(this.contactCooldown.get(car.slot)??-99)<.12)continue;
    this.contactCooldown.set(car.slot,this.time);
    const shot=incomingShot(before.ball,car.team);

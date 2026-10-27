@@ -1,4 +1,4 @@
-import createRocketSim from './dist/rocketsim.js';
+import createRocketSim from './dist/rocketsim.js?v=nexto-final-20261027';
 
 // Coordinates are converted from Rocket League to Three.js meters:
 // RL (x,y,z) -> Three (x,z,-y) / 100.
@@ -74,7 +74,9 @@ export async function createMatchEngine(){
   const cars=Array.from({length:n},(_,slot)=>{const i=slot*24,forward=axis(r,i+5),right=axis(r,i+8),up=axis(r,i+11);return{slot,team:r[i+1],position:vec(r,i+2),forward,right,up,quaternion:quaternion(right,up,forward),velocity:vec(r,i+14),boost:r[i+17],onGround:!!r[i+18],isFlipping:!!r[i+19],isBoosting:!!r[i+20],isDemoed:!!r[i+21],bodyKind:r[i+22],ballTouchAge:r[i+23]<0?-1:r[i+23]/120}});
   const bp=m._rs_pads()/4,count=m._rs_pad_count(),p=m.HEAPF32.subarray(bp,bp+count*6);
   const pads=Array.from({length:count},(_,id)=>{const i=id*6;return{id,position:vec(p,i),isBig:!!p[i+3],active:!!p[i+4],cooldown:p[i+5]}});
-  return{cars,ball:{position:vec(d,15),velocity:vec(d,18),quaternion:quaternion(axis(d,24),axis(d,27),axis(d,21))},pads,goal:d[32]?(d[16]>0?-1:1):0};
+  const extra=m._rs_neural_state()/4,e=m.HEAPF32.subarray(extra,extra+3+n*7);
+  for(const c of cars){const j=3+c.slot*7;c.angularVelocity=vec(e,j,1);c.hasFlip=!!e[j+3];c.hasJumped=!!e[j+4];c.wheelBallContacts=e[j+6];c.flipReset=!c.onGround&&c.hasFlip&&!c.hasJumped}
+  return{cars,ball:{position:vec(d,15),velocity:vec(d,18),angularVelocity:vec(e,0,1),quaternion:quaternion(axis(d,24),axis(d,27),axis(d,21))},pads,goal:d[32]?(d[16]>0?-1:1):0};
  };
  return{
   configure(blue=1,orange=1){m._rs_configure_match(blue,orange);return state()},

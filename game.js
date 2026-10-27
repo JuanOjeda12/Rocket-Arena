@@ -1,10 +1,10 @@
 import * as T from 'three';
 import {FollowCamera} from './follow-camera.js';
-import {addRoundedArena} from './arena-view.js';
+import {addRoundedArena} from './arena-view.js?v=nexto-final-20261027';
 import {turfMaterials} from './surface-materials.js';
 import {createBallVisual} from './ball-view.js';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
-import {startApp} from './app.js?v=all-updates-20261026';
+import {startApp} from './app.js?v=nexto-final-20261027';
 import {ARENA} from './arena-shape.js';
 import {createStadium} from './stadium.js';
 const $=id=>document.getElementById(id), canvas=$('game');
