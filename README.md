@@ -43,7 +43,7 @@ Mantén la computadora anfitriona encendida. Si no conecta, comprueba el firewal
 
 ## Contenido y créditos
 
-Incluye estadio de día/atardecer/noche, espectadores 2D, luces graduales, cinco eventos aéreos por partido, turbo y estelas, explosiones, salvadas, bots y repeticiones. A los tres minutos transcurridos llega el atardecer; con 1:00 restante ya es de noche. No se añadieron sonidos.
+Incluye estadio de día/atardecer/noche, espectadores 2D, luces graduales, cinco eventos aéreos por partido, turbo y estelas, explosiones, salvadas, bots y repeticiones. A los tres minutos transcurridos llega el atardecer; con 1:00 restante ya es de noche. Incluye sonidos originales sintetizados de motor, turbo, saltos, golpes de balón, recogida de boost, salvadas y goles. Configuración permite silenciarlos.
 
 Conserva ASSET-CREDITS.md, las licencias dentro de assets y THIRD-PARTY-LICENSES. Los modelos de Octane, Fennec y Dominus son comunitarios de Jako; el F1 Concept es de Qvist_designs y no es el F1 oficial de Rocket League. Es un prototipo independiente inspirado en el juego, sin afiliación oficial.
 
@@ -61,3 +61,13 @@ Antes de configurar la nube se puede jugar como invitado y conservar progreso en
 
 Los detalles de rangos, puntuación, XP y las fuentes oficiales investigadas están en setup/REGLAS-PROGRESO.md. Las fórmulas de este prototipo son propias y no afectan a Rocket League ni a cuentas de Epic Games.
 
+
+## Final de partido y partida privada local
+
+En Jugar → Partida privada → LOCAL · SIN SERVIDOR puedes elegir entre 1 y 5 jugadores por equipo (incluyendo tu puesto), tu lado y ocho dificultades de bots, de Bronce a Leyenda Supersónica. El resto de puestos son bots; funciona directamente en GitHub Pages y no altera XP ni rangos.
+
+A 0:00 se sigue jugando hasta que el balón toque el suelo. Un empate inicia prórroga con saque; un gol que empate a 0:00 muestra su repetición y luego inicia la prórroga. En prórroga, el primer gol decide el partido.
+
+Los resultados tienen tablas flotantes, sin la caja exterior oscura. Detrás se reproduce un resumen de goles y salvadas capturados mientras la partida estuvo abierta y luego aparece el podio del equipo ganador. Si no hay goles ni salvadas se usa la última jugada. El botón PODIO / JUGADAS permite alternar. En el podio puedes girar, saltar y activar turbo con tus controles, sin salir de tu puesto; tu reconocimiento personal aparece al lado de los puntos. Las celebraciones son visuales en cada navegador.
+
+El resumen conserva como máximo seis clips y solo muestrea 12 veces por segundo: no graba vídeo ni añade descargas de sonido. Los sonidos se generan localmente con Web Audio y se activan tras tu primer clic. Los originales de Rocket League no están incluidos. Para aplicar el reloj nuevo en LAN, actualiza los archivos y reinicia el servidor anfitrión.

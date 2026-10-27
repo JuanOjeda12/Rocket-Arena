@@ -5,6 +5,7 @@ import {carById,cleanProfile} from './catalog.js';
 import {MatchEvents} from './match-events.js';
 import {MatchStats} from './match-stats.js';
 import {incomingShot} from './ball-prediction.js';
+import {BALL_RADIUS} from './proportions.js';
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 const newMatchId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+Math.random().toString(36).slice(2);
 const rotate=(v,sign)=>[v[0]*sign,v[1],v[2]*sign];
@@ -54,7 +55,17 @@ export class Simulation{
   const touch=this.live.cars.filter(c=>c.ballTouchAge>=0&&c.ballTouchAge<=dt*1.5).sort((a,b)=>a.ballTouchAge-b.ballTouchAge)[0];if(touch)this.lastTouchTeam=touch.team;this.live.ball.lastTouchTeam=this.lastTouchTeam;
   this.live.cars=this.live.cars.map(c=>({...c,profile:this.profiles[c.slot]}));this.flow.record(this.live,dt);
   if(this.live.goal){this.stats.goal(this.live.goal);this.events.goal(this.live.goal,this.live.ball.position);this.flow.goal(this.live.goal,this.live)}
-  if(!this.options.training){this.remaining=Math.max(0,this.remaining-dt);if(this.remaining===0){if(this.flow.score[0]===this.flow.score[1])this.overtime=true;else if(this.flow.phase==='goal')this.endAfterReplay=true;else this.flow.phase='finished'}if(this.overtime&&this.flow.phase==='goal')this.endAfterReplay=true}
+  if(!this.options.training){
+   const wasOvertime=this.overtime;this.remaining=Math.max(0,this.remaining-dt);
+   if(this.flow.phase==='goal'){
+    if(wasOvertime||this.remaining===0&&this.flow.score[0]!==this.flow.score[1])this.endAfterReplay=true;
+    // An equalizer at 0:00 gets its replay and a fresh overtime kickoff.
+    else if(this.remaining===0)this.overtime=true;
+   }else if(this.remaining===0&&!this.overtime&&this.live.ball.position[1]<=BALL_RADIUS+.035){
+    if(this.flow.score[0]===this.flow.score[1]){this.overtime=true;this.resetRound()}
+    else this.flow.phase='finished';
+   }
+  }
  }
  view(){
   let state=this.live;const replay=this.flow.sample();if(replay)state=blendState(replay.a,replay.b,replay.alpha);

@@ -9,7 +9,7 @@ export class BallTrail{
  }
  clear(){this.samples=[];this.points.visible=this.line.visible=false;this.lastPosition=null;this.clock=0}
  update(position,velocity,dt,phase,team=null){
-  if(!['live','replay'].includes(phase)){this.clear();this.lastPhase=phase;return}
+  if(!['live','replay','highlight'].includes(phase)){this.clear();this.lastPhase=phase;return}
   if(phase!==this.lastPhase||this.lastPosition&&this.lastPosition.distanceTo(position)>8)this.clear();this.lastPhase=phase;
   for(const s of this.samples)s.age+=dt;
   const speed=Math.hypot(...velocity),active=speed>13;
