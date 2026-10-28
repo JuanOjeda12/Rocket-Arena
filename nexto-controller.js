@@ -1,3 +1,4 @@
+import {nextoDecisionTicks} from './bot-difficulty.js?v=rank-balance-20261027';
 // Nexto observation/action port, adapted from Rolv-Arild/Necto, CC BY-NC-SA 4.0.
 // Network observations retain the original RL units, team inversion and heading rotation.
 export function nextoObservation(state,slot,previousAction=new Array(8).fill(0)){
@@ -20,7 +21,7 @@ export function nextoObservation(state,slot,previousAction=new Array(8).fill(0))
 }
 const control=a=>({throttle:a[0],steer:-a[1],pitch:a[2],yaw:-a[3],roll:-a[4],jump:!!a[5],boost:!!a[6],handbrake:!!a[7]});
 export function nextoPolicy(logits,skill){
- const s=Math.max(0,Math.min(1,skill)),beta=.35+.65*Math.pow(s,.9),top=Math.max(...logits),weights=new Float64Array(logits.length);let total=0;
+ const s=Math.max(0,Math.min(1,skill)),beta=.12+.88*Math.pow(s,1.3),top=Math.max(...logits),weights=new Float64Array(logits.length);let total=0;
  if(s>=.999999){weights[logits.indexOf(top)]=1;return{weights,beta:1}}
  // Nexto's published beta/softmax selection, restricted to plausible near-best
  // actions so lower levels do not take arbitrary unrelated inputs.
@@ -30,9 +31,9 @@ export function nextoPolicy(logits,skill){
 }
 export class NextoController{
  constructor(model,skill=1){this.model=model;this.skill=Math.max(0,Math.min(1,skill));this.reset()}
- reset(){this.ticks=8;this.previousAction=new Array(8).fill(0);this.controls={};this.intent='Nexto';this.kickoffElapsed=0;this.kickoffTaker=null}
+ reset(){this.ticks=26;this.previousAction=new Array(8).fill(0);this.controls={};this.intent='Nexto';this.kickoffElapsed=0;this.kickoffTaker=null}
  update(state,slot){
-  if(this.ticks++<8)return this.controls;this.ticks=1;
+  if(this.ticks++<nextoDecisionTicks(this.skill))return this.controls;this.ticks=1;
   const own=state.cars.find(c=>c.slot===slot);if(own.isDemoed)return this.controls={};
   const obs=nextoObservation(state,slot,this.previousAction);let index=this.model.infer(obs.query,obs.entities,obs.count);
   if(this.skill<.999999){const {weights,beta}=nextoPolicy(this.model.logits(),this.skill);let sample=Math.random();for(let i=0;i<weights.length;i++){sample-=weights[i];if(sample<=0){index=i;break}}this.beta=beta}

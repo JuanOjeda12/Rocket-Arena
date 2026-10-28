@@ -1,12 +1,13 @@
+import {rankBotSkill} from './bot-difficulty.js?v=rank-balance-20261027';
 import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
 import {ONLINE_SERVER} from './online-config.js?v=stadium-finale-20261027';
 import * as T from './vendor/three.module.js';
-import {createVehicle} from './vehicle-view.js?v=stadium-finale-20261027';import {CARS,cleanProfile} from './catalog.js?v=stadium-finale-20261027';import {Simulation} from './simulation.js?v=stadium-finale-20261027';
+import {createVehicle} from './vehicle-view.js?v=stadium-finale-20261027';import {CARS,cleanProfile} from './catalog.js?v=stadium-finale-20261027';import {Simulation} from './simulation.js?v=rank-balance-20261027';
 import {GoalEffects} from './goal-effects.js?v=stadium-finale-20261027';
 import {BallTrail} from './ball-trail.js?v=stadium-finale-20261027';
 import {RenderBudget} from './render-budget.js?v=stadium-finale-20261027';
 import {createControls} from './controls.js?v=stadium-finale-20261027';
-import {PlayerHub} from './player-hub.js?v=stadium-finale-20261027';
+import {PlayerHub} from './player-hub.js?v=rank-balance-20261027';
 import {scoreboardHTML} from './scoreboard.js?v=stadium-finale-20261027';
 import {PostMatch} from './post-match.js?v=stadium-finale-20261027';
 import {GameAudio} from './game-audio.js?v=stadium-finale-20261027';
@@ -51,7 +52,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  function renderFront(){
   front.hidden=screen==='game';document.body.dataset.screen=screen;
   front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='podium'?podiumHTML():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
-  if(screen==='local-private')$('local-match').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);offline({blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:.12+Number(f.get('rank'))/7*.88,privateLocal:true})};
+  if(screen==='local-private')$('local-match').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);offline({blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:rankBotSkill(f.get('rank')),privateLocal:true})};
   if(screen==='garage'){
    $('driver-name').onchange=e=>{profile=cleanProfile({...profile,name:e.target.value});persist();preview.apply(profile)};
    $('car-color').oninput=e=>{profile.color=e.target.value;persist();preview.apply(profile)};
@@ -102,7 +103,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  }
  async function connect(url){network?.close();network=new NetClient(url,networkMessage);await network.connect();return network}
  async function createRoom(form){
-  if(!form.reportValidity())return;const f=new FormData(form),options={name:f.get('name'),blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:.12+Number(f.get('rank'))/7*.88,public:f.get('public')==='on',password:f.get('public')==='on'?f.get('password'):''};
+  if(!form.reportValidity())return;const f=new FormData(form),options={name:f.get('name'),blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:rankBotSkill(f.get('rank')),public:f.get('public')==='on',password:f.get('public')==='on'?f.get('password'):''};
   try{serverBase=serverURL($('server-address').value);await connect(serverBase);source='network';show('loading');network.send('create',{options,profile})}catch(e){toast(e.message);show('private','play')}
  }
  function showJoin(){

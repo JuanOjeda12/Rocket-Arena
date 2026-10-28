@@ -4,7 +4,7 @@ import {addRoundedArena} from './arena-view.js?v=stadium-finale-20261027';
 import {turfMaterials} from './surface-materials.js?v=stadium-finale-20261027';
 import {createBallVisual} from './ball-view.js?v=stadium-finale-20261027';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
-import {startApp} from './app.js?v=stadium-finale-20261027';
+import {startApp} from './app.js?v=rank-balance-20261027';
 import {ARENA} from './arena-shape.js?v=stadium-finale-20261027';
 import {createStadium} from './stadium.js?v=stadium-finale-20261027';
 const $=id=>document.getElementById(id), canvas=$('game');

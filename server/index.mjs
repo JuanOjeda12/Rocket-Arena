@@ -47,7 +47,7 @@ export function createGameServer({port=Number(process.env.PORT)||8080,host=proce
      if(c.room)throw Error('Sal de la sala actual primero.');if(rooms.size>=(Number(process.env.MAX_ROOMS)||4))throw Error('El servidor no admite más salas por ahora.');
      const o=m.options||{},blue=Number(o.blue),orange=Number(o.orange);if(!Number.isInteger(blue)||blue<1||blue>5||!Number.isInteger(orange)||orange<1||orange>5)throw Error('Elige entre 1 y 5 puestos por equipo.');
      const password=String(o.password||'');if(password.length>64)throw Error('Contraseña demasiado larga.');if(o.public&&password.length<1)throw Error('Añade una contraseña a la sala pública.');
-     const id=randomBytes(4).toString('hex').toUpperCase(),salt=randomBytes(16),options={blue,orange,difficulty:o.difficulty==='competitive'?'competitive':'casual',skill:Math.max(.12,Math.min(1,Number(o.skill)||.65))};
+     const id=randomBytes(4).toString('hex').toUpperCase(),salt=randomBytes(16),options={blue,orange,difficulty:o.difficulty==='competitive'?'competitive':'casual',skill:Math.max(0,Math.min(1,Number.isFinite(Number(o.skill))?Number(o.skill):.65))};
      const ownerSlot=o.team===1?blue:0;c.slot=ownerSlot;
      const worker=new Worker(new URL('./room-worker.mjs',import.meta.url),{workerData:{options,ownerSlot,profile:cleanProfile(m.profile)}});
      const r={id,name:String(o.name||'Partida privada').slice(0,40),public:!!o.public,salt,hash:password?scryptSync(password,salt,32):null,owner:c,occupants:new Map([[ownerSlot,c]]),pending:new Map(),worker,options,ready:false,last:null};

@@ -1,5 +1,5 @@
 import {AccountStore} from './accounts.js?v=stadium-finale-20261027';
-import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=stadium-finale-20261027';
+import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=rank-balance-20261027';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export class PlayerHub{
  constructor(apply){

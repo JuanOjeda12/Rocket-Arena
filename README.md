@@ -81,23 +81,3 @@ Competitivo arranca con una exigencia mucho mayor y sigue aumentando con el rang
 Pruebas de desarrollo con RocketSim: tres tiros a puerta vacía convertidos (antes uno), intercepción cruzada antes de un segundo, cinco tiros salvados desde una posición centrada, varios contactos aéreos por encima de cuatro metros con gol posterior en una situación favorable, y reparto de roles en 3v3. En un duelo controlado de saque, el nuevo bot venció 13–0 al anterior; no representa una tasa de victoria frente a jugadores humanos ni una equivalencia con rangos reales de Rocket League.
 
 Los módulos de entrada llevan una versión nueva para evitar que el navegador mezcle la IA antigua con la nueva. Tras subir la actualización, espera a que Pages termine y recarga. Para LAN, copia los archivos al equipo anfitrión y reinicia su servidor.
-
-## Nexto y flip reset (27 de octubre de 2026)
-
-La dificultad competitiva alta usa ahora el modelo entrenado Nexto de Rolv-Arild/Necto, no el controlador anterior de reglas. Los bots activos aparecen como NEXTO. El modelo completo se ejecuta localmente mediante WebAssembly SIMD a 15 decisiones por segundo, con las observaciones, angular velocity, turbo y disponibilidad de flip reales de RocketSim. No llama a una API de IA ni tiene coste por partida. Casual conserva el controlador ligero. Toda la escala competitiva y los niveles del selector privado usan Nexto con una selección de acciones progresiva.
-
-Incluye el modelo original convertido a datos float32, su inferencia y sus licencias. Nexto y los archivos adaptados de su arquitectura/observaciones están sujetos a CC BY-NC-SA 4.0: atribución, uso no comercial y compartir adaptaciones bajo los mismos términos. Lee THIRD-PARTY-LICENSES/NEXTO-LICENSE.txt y setup/NEXTO-INTEGRACION.md. No se afirma afiliación o aprobación de los autores.
-
-RocketSim permite recuperar el flip con al menos tres ruedas en el balón. El indicador reproduce un destello circular blanco bajo el coche, que se expande y desaparece en aproximadamente medio segundo, acompañado de un sonido. No es un icono permanente ni concede flips: observa los contactos reales de las ruedas y el reset de la física. Solo aparece para ti durante la partida y para todos en las repeticiones; se puede desactivar junto con su sonido desde Configuración. Está inspirado en el indicador de Rocket League v2.66.
-
-La integración fue contrastada con una implementación NumPy independiente del modelo y con pruebas físicas de tiros, salvadas y recuperación/consumo de un flip. Esto no garantiza ganar cada partido ni ejecutar air dribbles o flip resets de forma profesional en cada jugada. Las estadísticas de pruebas del controlador anterior no son una medida del nivel de Nexto.
-
-### Escala continua y compañero
-
-La fuerza de Nexto crece de forma continua con el MMR, también dentro de las divisiones. Los niveles inferiores eligen entre acciones cercanas a la mejor según el modelo; se usa la selección beta/softmax publicada por sus autores, descartando opciones muy poco probables. En el máximo se elige siempre la acción mejor valorada. No hay salto de controlador entre Platino y Diamante. Es una escala propia que necesita calibración jugando, no una equivalencia garantizada con los rangos oficiales.
-
-Cuando un equipo contiene humanos, los bots compañeros usan un parámetro de nivel moderadamente inferior (0.85 veces el nivel seleccionado); los rivales conservan su nivel completo. Ese factor no es una reducción física ni un porcentaje garantizado de rendimiento. Se recalcula también al entrar o salir de una sala LAN.
-
-### Arco y sonidos de postes
-
-El arco físico mide 17.8551 m de ancho y 6.42775 m de alto, en las coordenadas estándar que utiliza Nexto. Se alineó la cara interior del marco visual con esa abertura, corrigiendo una intrusión visual de 12.5 cm. No se ensanchó el arco ni se cambió la escala de las observaciones de Nexto. Un tiro al poste o al travesaño produce ahora un golpe metálico propio, distinto del bote normal. Las pruebas físicas distinguieron poste, travesaño y gol limpio.

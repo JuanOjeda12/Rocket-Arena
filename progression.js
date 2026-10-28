@@ -1,3 +1,4 @@
+import {mmrBotSkill} from './bot-difficulty.js?v=rank-balance-20261027';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PLAYLISTS=['1v1','2v2','3v3'];
 export const RANKS=['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'];
@@ -21,7 +22,7 @@ export function rankBadge(rank,size=40){
  return `<svg class="rank-badge" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" style="color:${rank.color}"><g fill="currentColor" fill-opacity=".23" stroke="currentColor" stroke-width="2">${shape}</g><path d="m23 34 9-13 9 13-9 13Z" fill="currentColor"/></svg>`;
 }
 export function levelInfo(xp){let level=1,remaining=integer(xp);while(level<20){const needed=level*1000;if(remaining<needed)return{level,current:remaining,needed};remaining-=needed;level++}return{level:20+Math.floor(remaining/20000),current:remaining%20000,needed:20000}}
-export const botSkill=record=>.1+.9*clamp((record?.mmr??400)/1680,0,1);
+export const botSkill=record=>mmrBotSkill(record?.mmr??400);
 export function completeResult(value,result){
  const p=cleanProgress(value);if(p.recent.includes(result.id))return{progress:p,award:null};
  p.pending=null;if(!['casual','competitive'].includes(result.mode)||!PLAYLISTS.includes(result.playlist))return{progress:p,award:null};

@@ -8,7 +8,7 @@ import {MatchStats} from './match-stats.js?v=stadium-finale-20261027';
 import {incomingShot} from './ball-prediction.js?v=stadium-finale-20261027';
 import {BALL_RADIUS} from './proportions.js?v=stadium-finale-20261027';
 import {loadNexto} from './nexto-model.js?v=stadium-finale-20261027';
-import {NextoController} from './nexto-controller.js?v=stadium-finale-20261027';
+import {NextoController} from './nexto-controller.js?v=rank-balance-20261027';
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 const newMatchId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+Math.random().toString(36).slice(2);
 const rotate=(v,sign)=>[v[0]*sign,v[1],v[2]*sign];

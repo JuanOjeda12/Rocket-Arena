@@ -21,12 +21,12 @@ export function predictBall(ball,seconds){
 export function incomingShot(ball,team){
  // Blue defends +Z in browser coordinates; Orange defends -Z.
  const end=team===0?1:-1,v=ball.velocity;
- if(v[2]*end<.6)return null;
+ if(v[2]*end<1.5)return null;
  let t=(end*51.2-ball.position[2])/v[2];
- if(t<-.06||t>3)return null;
- t=Math.max(.001,t);let impact;
- for(let i=0;i<5;i++){impact=predictBall(ball,t);const error=51.2-impact[2]*end;if(Math.abs(error)<.03)break;t+=error/Math.max(1,v[2]*end);if(t<-.06||t>3)return null}
+ if(t<=0||t>3)return null;
+ let impact;
+ for(let i=0;i<5;i++){impact=predictBall(ball,t);const error=51.2-impact[2]*end;if(Math.abs(error)<.03)break;t+=error/Math.max(1,v[2]*end);if(t<=0||t>3)return null}
  // Reject trajectories that hit a side/end wall or cross above the crossbar.
- if(Math.abs(impact[0])>8.015||impact[1]>5.515||impact[2]*end<50)return null;
+ if(Math.abs(impact[0])>7.95||impact[1]>5.5||impact[2]*end<50)return null;
  return{time:t,impact,end};
 }
