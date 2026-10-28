@@ -1,4 +1,4 @@
-import {incomingShot} from './ball-prediction.js';
+import {incomingShot} from './ball-prediction.js?v=stadium-finale-20261027';
 const blank=slot=>({slot,points:0,goals:0,assists:0,saves:0,epicSaves:0,shots:0,touches:0});
 export class MatchStats{
  constructor(count){this.rows=Array.from({length:count},(_,i)=>blank(i));this.time=0;this.eventId=0;this.roundReset()}

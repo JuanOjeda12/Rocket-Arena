@@ -1,6 +1,6 @@
-import {ACCOUNT_CONFIG} from './account-config.js';
-import {cleanProgress,emptyProgress} from './progression.js';
-import {cleanProfile} from './catalog.js';
+import {ACCOUNT_CONFIG} from './account-config.js?v=stadium-finale-20261027';
+import {cleanProgress,emptyProgress} from './progression.js?v=stadium-finale-20261027';
+import {cleanProfile} from './catalog.js?v=stadium-finale-20261027';
 const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}};
 const normalize=data=>({garage:cleanProfile(data?.garage||{}),progress:cleanProgress(data?.progress||{}),controls:data?.controls||null});

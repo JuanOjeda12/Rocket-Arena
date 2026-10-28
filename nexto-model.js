@@ -1,5 +1,5 @@
 // Nexto model and architecture: Rolv-Arild/Necto, CC BY-NC-SA 4.0.
-import createModel from './engine/nexto/nexto.js?v=nexto-final-20261027';
+import createModel from './engine/nexto/nexto.js?v=stadium-finale-20261027';
 export function nextoActions(){const a=[];
  for(const throttle of [-1,0,1])for(const steer of [-1,0,1])for(const boost of [0,1])for(const handbrake of [0,1]){if(boost&&throttle!==1)continue;a.push([throttle||boost,steer,0,steer,0,0,boost,handbrake])}
  for(const pitch of [-1,0,1])for(const yaw of [-1,0,1])for(const roll of [-1,0,1])for(const jump of [0,1])for(const boost of [0,1]){if(jump&&yaw!==0||pitch===0&&roll===0&&jump===0)continue;a.push([boost,yaw,pitch,yaw,roll,jump,boost,Number(jump===1&&(pitch!==0||yaw!==0||roll!==0))])}return a;

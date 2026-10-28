@@ -21,3 +21,16 @@ body[data-screen=results] #hud footer,body[data-screen=results] #hud header{visi
 @media(max-width:850px){.results-panel{grid-template-columns:1fr}.result-summary{max-width:100%}.result-summary h1{font-size:32px}.result-summary .reward-panel{max-width:290px}.result-tables{margin-top:100px;max-width:100%}.result-summary .result-actions{max-width:100%}.transport-tabs{flex-wrap:wrap}.transport-tabs button{min-width:100px}}
 
 .flip-setting{position:fixed;right:5vw;bottom:76px;z-index:15;font-size:11px}
+
+body[data-screen=podium] #front{background:transparent;pointer-events:none;padding:0;overflow:hidden}
+body[data-screen=podium] #hud{visibility:hidden}
+.victory-title{position:absolute;top:9vh;left:0;right:0;text-align:center;color:#8bd7ff;text-shadow:0 0 25px #238eff;animation:victory-in 1s ease-out both}
+.victory-title.orange{color:#ffcf8a;text-shadow:0 0 25px #ff8b25}.victory-title>span{letter-spacing:5px;font-size:13px}.victory-title h1{font:300 clamp(35px,6vw,76px) 'Barlow Condensed',Arial;letter-spacing:10px;margin:4px}.victory-title p{font-size:23px;margin:0}
+.victory-label{position:absolute;transform:translateX(-50%);text-align:center;min-width:150px;filter:drop-shadow(0 2px 4px #000);animation:victory-in 1s .6s both}.victory-label b{display:block;color:#e0f4ff;font-size:17px}.victory-label span{display:block;font-size:11px;color:#ffe2a0;margin-top:5px}.victory-label small{display:block;font-size:8px;letter-spacing:1px;margin-top:4px}.victory-help{position:absolute;bottom:4vh;left:0;right:0;text-align:center;color:#d8e8f4;font-size:11px;text-shadow:0 1px 4px #000}
+.final-rank{margin-top:16px;padding:12px 0;border-top:1px solid #b9dbff44}.final-rank .rank-label{margin-top:8px}.final-rank .eyebrow{color:#ffe4a7;font-size:11px}
+@keyframes victory-in{from{opacity:0;translate:0 20px}to{opacity:1;translate:0 0}}
+
+/* Victory lineup on the pitch, matching the reference composition without platforms. */
+body[data-screen=podium] #front{background:radial-gradient(ellipse at 50% 45%,transparent 27%,#01091680 100%)}
+.victory-title{top:8vh}.victory-title h1{font-weight:300;font-size:clamp(40px,6vw,76px);line-height:1;margin:3px}.victory-title>span{letter-spacing:2px;font-size:12px}.victory-title .victory-mvp{font:300 17px 'Barlow Condensed',Arial;line-height:1;color:#d9efffcc}.victory-mvp b{font-size:14px;font-weight:400}
+.victory-label{min-width:155px}.victory-label b{font-weight:500;color:#81baff;font-size:17px}.victory-label span{font-size:10px;color:#dce9fa;margin-top:5px}.victory-label small{color:#b7cce0;font-size:9px;letter-spacing:0;margin-top:2px}.victory-help{font-size:10px;opacity:.7}

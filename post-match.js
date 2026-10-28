@@ -1,4 +1,5 @@
-import {ReplayBuffer} from './match-flow.js';
+import {advanceCelebration,PODIUM_SECONDS} from './celebration.js?v=stadium-finale-20261027';
+import {ReplayBuffer} from './match-flow.js?v=stadium-finale-20261027';
 const visual=s=>({cars:s.cars.map(c=>({...c,position:[...c.position],quaternion:[...c.quaternion]})),ball:{...s.ball,position:[...s.ball.position],quaternion:[...s.ball.quaternion]},pads:s.pads});
 export class PostMatch{
  constructor(){this.reset()}
@@ -20,21 +21,34 @@ export class PostMatch{
  finish(state,slot){
   if(this.finished)return;for(const p of this.pending)this.addClip(p.title,p.weight);this.pending=[];
   if(!this.clips.length)this.addClip('MEJORES JUGADAS',1);
-  this.finished=true;this.clock=0;this.mode=this.clips.length?'highlights':'podium';this.state=structuredClone(state);this.slot=slot;
+  this.finished=true;this.clock=0;this.mode='podium';this.state=structuredClone(state);this.slot=slot;
   this.winner=state.score[0]>state.score[1]?0:1;
   this.winners=state.cars.filter(c=>c.team===this.winner).sort((a,b)=>(state.stats.find(s=>s.slot===b.slot)?.points||0)-(state.stats.find(s=>s.slot===a.slot)?.points||0));
  }
- toggle(){this.mode=this.mode==='podium'&&this.clips.length?'highlights':'podium';this.clock=0}
- update(dt,input={}){if(!this.finished)return null;this.clock+=dt;
+ update(dt,input={},shared=null){
+  if(!this.finished)return null;
+  this.clock=shared?shared.time:this.clock+dt;
+  this.mode=this.clock<PODIUM_SECONDS?'podium':'highlights';
   if(this.mode==='highlights'){
-   let at=this.clock;for(const clip of this.clips){const duration=clip.duration/.8+.6;if(at<duration)return{mode:'highlights',title:clip.title,sample:ReplayBuffer.sample(clip,at*.8)};at-=duration}
-   this.mode='podium';this.clock=0;
+   const duration=this.clips.reduce((sum,c)=>sum+c.duration/.8+.6,0);
+   let at=duration?(this.clock-PODIUM_SECONDS)%duration:0;
+   for(let index=0;index<this.clips.length;index++){
+    const clip=this.clips[index],length=clip.duration/.8+.6;
+    if(at<length)return{mode:'highlights',title:clip.title,clip:index,sample:ReplayBuffer.sample(clip,Math.min(clip.duration,at*.8))};at-=length;
+   }
+   return{mode:'highlights',title:'PARTIDO TERMINADO',clip:-1};
   }
-  const pose=this.poses.get(this.slot)||{yaw:0,jump:0,v:0,held:false,flip:0};
-  pose.yaw+=(input.steer||input.roll||0)*dt*2.4;
-  if(input.jump&&!pose.held){if(pose.jump>.05)pose.flip=Math.PI*2;else pose.v=3.8}pose.held=!!input.jump;
-  pose.v-=10*dt;pose.jump=Math.max(0,pose.jump+pose.v*dt);if(!pose.jump)pose.v=0;pose.flip=Math.max(0,pose.flip-dt*9);this.poses.set(this.slot,pose);
-  return{mode:'podium',title:'EQUIPO GANADOR',pose};
+  const pose=shared?.poses?.[this.slot]||advanceCelebration(this.poses.get(this.slot),input,dt);this.poses.set(this.slot,pose);
+  return{mode:'podium',title:'EQUIPO GANADOR',pose,poses:shared?.poses||Object.fromEntries(this.poses),progress:Math.min(1,this.clock/1.2)};
+ }
+ accolades(car){
+  const s=this.state?.stats.find(s=>s.slot===car.slot)||{},out=[];
+  if(s.goals)out.push({title:'GOLEADOR',detail:s.goals+' goles'});
+  if(s.saves)out.push({title:s.epicSaves?'GUARDIÁN ÉPICO':'GUARDIÁN',detail:s.saves+' salvadas'});
+  if(s.shots)out.push({title:'ARTILLERO',detail:s.shots+' tiros a portería'});
+  if(s.assists)out.push({title:'ESTRATEGA',detail:s.assists+' asistencias'});
+  if(out.length<2)out.push({title:'ACTIVO',detail:(s.touches||0)+' toques de balón'});
+  return out.slice(0,2);
  }
  achievement(car){const s=this.state?.stats.find(s=>s.slot===car.slot)||{},mvp=this.winners?.[0]?.slot===car.slot;
   return mvp?'MVP · '+(s.points||0)+' PTS':s.saves?'GUARDIÁN · '+s.saves+' SALVADAS':s.goals?'GOLEADOR · '+s.goals+' GOLES':s.assists?'ASISTENTE · '+s.assists+' ASIST.':'COMPAÑERO DE EQUIPO';

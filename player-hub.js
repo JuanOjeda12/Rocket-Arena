@@ -1,5 +1,5 @@
-import {AccountStore} from './accounts.js';
-import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=nexto-final-20261027';
+import {AccountStore} from './accounts.js?v=stadium-finale-20261027';
+import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=stadium-finale-20261027';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export class PlayerHub{
  constructor(apply){
@@ -64,10 +64,16 @@ export class PlayerHub{
   this.account.data.progress=result.progress;this.award=result.award;this.context=null;this.account.persist();this.account.flush();
  }
  abandon(){if(!this.context)return;const result=completeResult(this.progress,{...this.context,seconds:0,won:false,forfeit:true,stats:{}});this.account.data.progress=result.progress;this.context=null;this.award=null;this.account.persist()}
- awardHTML(){
+ resultRankHTML(playlist='1v1'){
+  const a=this.award,r=a?.ranked?a.rankAfter:rankInfo(this.rating(PLAYLISTS.includes(playlist)?playlist:'1v1'));
+  const before=a?.rankBefore,changed=a?.ranked&&before?.placed&&r.placed;
+  const title=changed?(r.step>before.step?'ASCENSO':r.step<before.step?'DESCENSO':'DIVISIÓN SIN CAMBIOS'):a?.ranked?'POSICIONAMIENTO':'RANGO SIN CAMBIOS';
+  return `<section class="final-rank"><span class="eyebrow">${title} · ${esc(PLAYLISTS.includes(playlist)?playlist:'1v1')}</span><div class="rank-label">${rankBadge(r,58)}<span><b>${esc(r.name)}</b><small>${r.placed?(r.division?'División '+['I','II','III','IV'][r.division-1]:'Rango máximo'):r.placements+'/10 posicionamientos'}${a?.ranked?' · '+(a.delta>0?'+':'')+a.delta+' MMR':''}</small></span></div></section>`;
+ }
+ awardHTML(showRank=true){
   const a=this.award;if(!a)return'';const r=a.rankAfter;let title='PROGRESO GUARDADO';
   if(a.ranked&&r.placed)title=!a.rankBefore.placed?'POSICIONAMIENTO COMPLETADO':r.step>a.rankBefore.step?'ASCENSO':r.step<a.rankBefore.step?'DESCENSO':'COMPETITIVO';
-  return `<section class="reward-panel"><span class="eyebrow">${title}</span><h2>+${a.xp} XP${a.levelAfter>a.levelBefore?' · ¡SUBES DE NIVEL!':''}</h2>${a.ranked?`<div class="rank-label">${rankBadge(r,52)}<span><b>${esc(r.name)}</b><small>${r.placed?(r.division?'División '+['I','II','III','IV'][r.division-1]:'Rango máximo'):r.placements+'/10 posicionamientos'} · ${a.delta>0?'+':''}${a.delta} MMR</small></span></div>`:''}${a.reason?`<p class="muted">${esc(a.reason)}</p>`:''}${this.levelHTML()}</section>`;
+  return `<section class="reward-panel"><span class="eyebrow">${title}</span><h2>+${a.xp} XP${a.levelAfter>a.levelBefore?' · ¡SUBES DE NIVEL!':''}</h2>${a.ranked&&showRank?`<div class="rank-label">${rankBadge(r,52)}<span><b>${esc(r.name)}</b><small>${r.placed?(r.division?'División '+['I','II','III','IV'][r.division-1]:'Rango máximo'):r.placements+'/10 posicionamientos'} · ${a.delta>0?'+':''}${a.delta} MMR</small></span></div>`:''}${a.reason?`<p class="muted">${esc(a.reason)}</p>`:''}${this.levelHTML()}</section>`;
  }
 }
 

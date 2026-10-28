@@ -1,7 +1,7 @@
 import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
 import {Worker} from 'node:worker_threads';import {randomBytes,scryptSync,timingSafeEqual} from 'node:crypto';
 import {WebSocketServer,WebSocket} from 'ws';
-import {cleanProfile} from '../catalog.js';import {startDiscovery,lanAddresses} from './discovery.mjs';
+import {cleanProfile} from '../catalog.js?v=stadium-finale-20261027';import {startDiscovery,lanAddresses} from './discovery.mjs';
 const root=path.resolve(fileURLToPath(new URL('../',import.meta.url))),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.glb':'model/gltf-binary','.gltf':'model/gltf+json','.png':'image/png','.jpg':'image/jpeg','.json':'application/json','.md':'text/plain'};
 export function createGameServer({port=Number(process.env.PORT)||8080,host=process.env.HOST||'0.0.0.0',discovery=true}={}){
  const rooms=new Map(),clients=new Set();let finder={peers:new Map(),close(){}};
@@ -14,6 +14,7 @@ export function createGameServer({port=Number(process.env.PORT)||8080,host=proce
   if(req.method==='OPTIONS'){res.writeHead(204).end();return}
   let url;try{url=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
   const json=value=>{res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value))};
+  if(url.pathname==='/api/health'){json({ok:true});return}
   if(url.pathname==='/api/info'){json({name:'Rocket Arena',port:server.address()?.port,addresses:lanAddresses(),online:true});return}
   if(url.pathname==='/api/rooms'){json(list());return}
   if(url.pathname==='/api/discovery'){json([...finder.peers.values()].filter(p=>Date.now()-p.seen<12000));return}
@@ -46,7 +47,7 @@ export function createGameServer({port=Number(process.env.PORT)||8080,host=proce
      if(c.room)throw Error('Sal de la sala actual primero.');if(rooms.size>=(Number(process.env.MAX_ROOMS)||4))throw Error('El servidor no admite más salas por ahora.');
      const o=m.options||{},blue=Number(o.blue),orange=Number(o.orange);if(!Number.isInteger(blue)||blue<1||blue>5||!Number.isInteger(orange)||orange<1||orange>5)throw Error('Elige entre 1 y 5 puestos por equipo.');
      const password=String(o.password||'');if(password.length>64)throw Error('Contraseña demasiado larga.');if(o.public&&password.length<1)throw Error('Añade una contraseña a la sala pública.');
-     const id=randomBytes(4).toString('hex').toUpperCase(),salt=randomBytes(16),options={blue,orange,difficulty:o.difficulty==='competitive'?'competitive':'casual'};
+     const id=randomBytes(4).toString('hex').toUpperCase(),salt=randomBytes(16),options={blue,orange,difficulty:o.difficulty==='competitive'?'competitive':'casual',skill:Math.max(.12,Math.min(1,Number(o.skill)||.65))};
      const ownerSlot=o.team===1?blue:0;c.slot=ownerSlot;
      const worker=new Worker(new URL('./room-worker.mjs',import.meta.url),{workerData:{options,ownerSlot,profile:cleanProfile(m.profile)}});
      const r={id,name:String(o.name||'Partida privada').slice(0,40),public:!!o.public,salt,hash:password?scryptSync(password,salt,32):null,owner:c,occupants:new Map([[ownerSlot,c]]),pending:new Map(),worker,options,ready:false,last:null};

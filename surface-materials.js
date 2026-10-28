@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {ARENA} from './arena-shape.js';
+import {ARENA} from './arena-shape.js?v=stadium-finale-20261027';
 const loader=new T.TextureLoader(),cache=new Map();
 function texture(file,color=false){
  const key=file+color;if(cache.has(key))return cache.get(key);

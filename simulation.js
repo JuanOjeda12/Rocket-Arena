@@ -1,13 +1,14 @@
-import {createMatchEngine} from './engine/adapter.js?v=nexto-final-20261027';
-import {OpponentAI} from './opponent-ai.js?v=nexto-final-20261027';
-import {MatchFlow} from './match-flow.js';
-import {carById,cleanProfile} from './catalog.js';
-import {MatchEvents} from './match-events.js?v=nexto-final-20261027';
-import {MatchStats} from './match-stats.js';
-import {incomingShot} from './ball-prediction.js?v=nexto-final-20261027';
-import {BALL_RADIUS} from './proportions.js';
-import {loadNexto} from './nexto-model.js?v=nexto-final-20261027';
-import {NextoController} from './nexto-controller.js?v=nexto-final-20261027';
+import {advanceCelebration,PODIUM_SECONDS} from './celebration.js?v=stadium-finale-20261027';
+import {createMatchEngine} from './engine/adapter.js?v=stadium-finale-20261027';
+import {OpponentAI} from './opponent-ai.js?v=stadium-finale-20261027';
+import {MatchFlow} from './match-flow.js?v=stadium-finale-20261027';
+import {carById,cleanProfile} from './catalog.js?v=stadium-finale-20261027';
+import {MatchEvents} from './match-events.js?v=stadium-finale-20261027';
+import {MatchStats} from './match-stats.js?v=stadium-finale-20261027';
+import {incomingShot} from './ball-prediction.js?v=stadium-finale-20261027';
+import {BALL_RADIUS} from './proportions.js?v=stadium-finale-20261027';
+import {loadNexto} from './nexto-model.js?v=stadium-finale-20261027';
+import {NextoController} from './nexto-controller.js?v=stadium-finale-20261027';
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 const newMatchId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+Math.random().toString(36).slice(2);
 const rotate=(v,sign)=>[v[0]*sign,v[1],v[2]*sign];
@@ -21,7 +22,7 @@ export class Simulation{
   this.options={blue:1,orange:1,difficulty:'casual',training:false,...options};
   this.options.blue=Math.max(1,Math.min(5,Number(this.options.blue)||1));this.options.orange=this.options.training?0:Math.max(1,Math.min(5,Number(this.options.orange)||1));
   this.live=this.engine.configure(this.options.blue,this.options.orange);this.profiles=this.live.cars.map(c=>({name:`${this.options.difficulty==='competitive'&&this.options.useNexto!==false?'NEXTO':'BOT'} ${c.slot+1}`,body:'octane',color:c.team?'#ff8b32':'#248bff',human:false}));
-  this.bots=this.live.cars.map(c=>new OpponentAI({difficulty:this.options.difficulty,skill:this.options.botSkills?.[c.slot]??this.options.skill}));this.neuralBots=this.live.cars.map(c=>new NextoController(this.neural,this.options.botSkills?.[c.slot]??this.options.skill??.65));this.roles=[null,null];this.roleClock=0;this.events=new MatchEvents();this.stats=new MatchStats(this.live.cars.length);this.matchId=newMatchId();this.played=0;this.flow=new MatchFlow(()=>this.nextRound());this.remaining=300;this.overtime=false;this.endAfterReplay=false;this.started=false;this.resetRound();
+  this.bots=this.live.cars.map(c=>new OpponentAI({difficulty:this.options.difficulty,skill:this.options.botSkills?.[c.slot]??this.options.skill}));this.neuralBots=this.live.cars.map(c=>new NextoController(this.neural,this.options.botSkills?.[c.slot]??this.options.skill??.65));this.roles=[null,null];this.roleClock=0;this.events=new MatchEvents();this.stats=new MatchStats(this.live.cars.length);this.matchId=newMatchId();this.played=0;this.postmatch={time:0,poses:{}};this.flow=new MatchFlow(()=>this.nextRound());this.remaining=300;this.overtime=false;this.endAfterReplay=false;this.started=false;this.resetRound();
  }
  assign(slot,profile,human=true){if(!this.profiles[slot])throw Error('Puesto inválido');this.profiles[slot]={...cleanProfile(profile),human};this.engine.setBody(slot,carById(profile.body).kind);this.live=this.engine.state();this.refreshBotSkills()}
  refreshBotSkills(){
@@ -31,7 +32,7 @@ export class Simulation{
  resetRound(){this.live=this.engine.reset();this.lastTouchTeam=null;this.bots?.forEach(b=>b.reset());this.neuralBots?.forEach(b=>b.reset());this.roles=[null,null];this.roleClock=0;this.events?.resetRound();this.stats?.roundReset();this.flow?.beginRound(!this.options.training)}
  nextRound(){if(this.endAfterReplay){this.flow.phase='finished';return}this.resetRound()}
  start(){this.started=true;this.resetRound()}
- restart(){this.remaining=300;this.played=0;this.matchId=newMatchId();this.stats=new MatchStats(this.live.cars.length);this.overtime=false;this.endAfterReplay=false;this.flow.score=[0,0];this.start()}
+ restart(){this.postmatch={time:0,poses:{}};this.remaining=300;this.played=0;this.matchId=newMatchId();this.stats=new MatchStats(this.live.cars.length);this.overtime=false;this.endAfterReplay=false;this.flow.score=[0,0];this.start()}
  botInput(slot,dt){
   if(this.options.difficulty==='competitive'&&this.options.useNexto!==false){this.bots[slot].intent='Nexto';return this.neuralBots[slot].update(this.live,slot)}
   const ai=this.bots[slot];if(ai.time+dt<ai.nextThink){ai.time+=dt;return ai.controls}
@@ -50,7 +51,11 @@ export class Simulation{
   return this.bots[slot].update(state,dt);
  }
  tick(dt,inputs={}){
-  if(!this.started||this.flow.phase==='finished')return;
+  if(!this.started)return;
+  if(this.flow.phase==='finished'){
+   if(this.postmatch.time<PODIUM_SECONDS){for(const car of this.live.cars)if(this.profiles[car.slot]?.human)this.postmatch.poses[car.slot]=advanceCelebration(this.postmatch.poses[car.slot],inputs[car.slot]||{},dt)}
+   this.postmatch.time+=dt;return;
+  }
   this.flow.update(dt);if(this.flow.phase!=='live')return;
   this.roleClock-=dt;
   if(this.roleClock<=0){this.roleClock=.12;for(const team of [0,1]){
@@ -79,7 +84,7 @@ export class Simulation{
  }
  view(){
   let state=this.live;const replay=this.flow.sample();if(replay)state=blendState(replay.a,replay.b,replay.alpha);
-  return{matchId:this.matchId,played:this.played,stats:this.stats.snapshot(),cars:state.cars.map(c=>({...c,profile:c.profile||this.profiles[c.slot]})),ball:state.ball,pads:state.pads,events:this.events.list,phase:!this.started?'lobby':this.flow.phase,score:[...this.flow.score],countdown:this.flow.clock,goalEnd:this.flow.end||1,replayProgress:this.flow.clip?Math.min(1,this.flow.playback/Math.max(.01,this.flow.clip.duration)):0,remaining:this.remaining,overtime:this.overtime,training:this.options.training,difficulty:this.options.difficulty};
+  return{postmatch:this.postmatch,matchId:this.matchId,played:this.played,stats:this.stats.snapshot(),cars:state.cars.map(c=>({...c,profile:c.profile||this.profiles[c.slot]})),ball:state.ball,pads:state.pads,events:this.events.list,phase:!this.started?'lobby':this.flow.phase,score:[...this.flow.score],countdown:this.flow.clock,goalEnd:this.flow.end||1,replayProgress:this.flow.clip?Math.min(1,this.flow.playback/Math.max(.01,this.flow.clip.duration)):0,remaining:this.remaining,overtime:this.overtime,training:this.options.training,difficulty:this.options.difficulty};
  }
  skip(){this.flow.skip()}
 }

@@ -1,15 +1,17 @@
+import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
+import {ONLINE_SERVER} from './online-config.js?v=stadium-finale-20261027';
 import * as T from './vendor/three.module.js';
-import {createVehicle} from './vehicle-view.js';import {CARS,cleanProfile} from './catalog.js';import {Simulation} from './simulation.js?v=nexto-final-20261027';
-import {GoalEffects} from './goal-effects.js?v=nexto-final-20261027';
-import {BallTrail} from './ball-trail.js';
-import {RenderBudget} from './render-budget.js';
-import {createControls} from './controls.js';
-import {PlayerHub} from './player-hub.js?v=nexto-final-20261027';
-import {scoreboardHTML} from './scoreboard.js';
-import {PostMatch} from './post-match.js';
-import {GameAudio} from './game-audio.js?v=nexto-final-20261027';
-import {FlipResetIndicator} from './flip-reset-visual.js?v=nexto-final-20261027';
-import {createBoostPads} from './boost-pads.js';import {createPlaySession} from './play-session.js';import {NetClient,serverURL} from './net-client.js';import {constrainArenaCamera} from './arena-shape.js';
+import {createVehicle} from './vehicle-view.js?v=stadium-finale-20261027';import {CARS,cleanProfile} from './catalog.js?v=stadium-finale-20261027';import {Simulation} from './simulation.js?v=stadium-finale-20261027';
+import {GoalEffects} from './goal-effects.js?v=stadium-finale-20261027';
+import {BallTrail} from './ball-trail.js?v=stadium-finale-20261027';
+import {RenderBudget} from './render-budget.js?v=stadium-finale-20261027';
+import {createControls} from './controls.js?v=stadium-finale-20261027';
+import {PlayerHub} from './player-hub.js?v=stadium-finale-20261027';
+import {scoreboardHTML} from './scoreboard.js?v=stadium-finale-20261027';
+import {PostMatch} from './post-match.js?v=stadium-finale-20261027';
+import {GameAudio} from './game-audio.js?v=stadium-finale-20261027';
+import {FlipResetIndicator} from './flip-reset-visual.js?v=stadium-finale-20261027';
+import {createBoostPads} from './boost-pads.js?v=stadium-finale-20261027';import {createPlaySession} from './play-session.js?v=stadium-finale-20261027';import {NetClient,serverURL} from './net-client.js?v=stadium-finale-20261027';import {constrainArenaCamera} from './arena-shape.js?v=stadium-finale-20261027';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCamera,stadium}){
  const matchFov=camera.fov;
@@ -19,12 +21,10 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  let profile=cleanProfile(saved),screen='home',screenBack='home',running=false,keys={},ballCam=false,simulation=null,simulationReady=null,loading=false;
  let source='offline',network=null,networkOwner=false,slot=0,room=null,netA=null,netB=null,netAt=0,lastInput=0,transport='lan',serverBase=location.origin,serverInfo=null,selectedRoom=null,admissions=[];
  let hub=null,offlineOptions=null,tabHeld=false,scoreAt=0;
- const flipIndicator=new FlipResetIndicator(scene);const post=new PostMatch(),audio=new GameAudio(),podium=new T.Group();scene.add(podium);podium.visible=false;
- const podiumMaterial=new T.MeshStandardMaterial({color:0x172c40,metalness:.65,roughness:.3});
- for(let i=0;i<6;i++){const m=new T.Mesh(new T.CylinderGeometry(1.8,2,.3,32),podiumMaterial);podium.add(m)}
+ const flipIndicator=new FlipResetIndicator(scene);const post=new PostMatch(),audio=new GameAudio(),podium=new T.Group();scene.add(podium);podium.visible=false;const podiumPoses=new Map();for(let i=0;i<5;i++){const shadow=new T.Mesh(new T.PlaneGeometry(1.7,2.1),new T.MeshBasicMaterial({map:softGlow(),color:0x000000,transparent:true,opacity:.3,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.002;podium.add(shadow)}
  addEventListener('pointerdown',()=>audio.unlock(),{passive:true});addEventListener('keydown',()=>audio.unlock());
- addEventListener('mousedown',e=>{if(screen==='results'&&!e.target.closest('button,input,select,a')){e.preventDefault();keys['Mouse'+e.button]=true}});
- front.addEventListener('contextmenu',e=>{if(screen==='results')e.preventDefault()});
+ addEventListener('mousedown',e=>{if(screen==='podium'&&!e.target.closest('button,input,select,a')){e.preventDefault();keys['Mouse'+e.button]=true}});
+ front.addEventListener('contextmenu',e=>{if(screen==='podium')e.preventDefault()});
  let stateA=null,stateB=null,lastPhase='',label='ENTRENAMIENTO',pads=null,last=performance.now(),elapsed=0,acc=0,replayReady=false,previousCam=false,previousStart=false;
  const velocity=new T.Vector3(),effects=new GoalEffects(scene),ballTrail=new BallTrail(scene);let awardUntil=0,frameDelta=1/60;preview.root.position.set(0,.17,30);preview.root.rotation.y=Math.PI+.35;preview.apply(profile);
  const persist=()=>{try{localStorage.setItem('rocket-garage',JSON.stringify(profile))}catch{}hub?.saveGarage(profile)};
@@ -40,16 +40,17 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  function playMenu(){return `<div class="page-title">JUGAR</div><div class="card-grid">${card('CASUAL','Partidos contra bots','casual')}${card('COMPETITIVO','Bots más rápidos y exigentes','competitive','orange')}${card('TORNEOS','','','green',true)}${card('ENTRENAMIENTO','Free play / Play offline','training','purple')}${card('PARTIDA PRIVADA','Crear o unirse · LAN / ONLINE','private','teal')}${card('EXTRAS','','','red',true)}</div>${back()}`}
  function matchMenu(difficulty){return `<div class="page-title">${difficulty==='casual'?'CASUAL':'COMPETITIVO'}</div><p class="page-sub">${difficulty==='casual'?'Tú y tu equipo contra bots.':'Mismos equipos. Bots con reacción más rápida, mejor anticipación y uso de boost.'}</p><div class="card-grid">${[3,2,1].map(n=>`<div class="playlist-choice">`+card(`${n}v${n}`,n===1?'DUELO':n===2?'DOBLES':'ESTÁNDAR',`offline:${difficulty}:${n}`,difficulty==='casual'?'blue':'orange')+(difficulty==='competitive'?`<div class="playlist-rank rank-label">${hub.rankHTML(`${n}v${n}`)}</div>`:'')+'</div>').join('')}${['HEATSEEKER','DROPSHOT','KNOCKOUT','RUMBLE','HOOPS','SNOW DAY'].map(n=>card(n,'','','purple',true)).join('')}</div>${back()}`}
  function garageMenu(){return `<div class="page-title">GARAJE</div><div class="garage-panel"><label>CONDUCTOR<input id="driver-name" maxlength="24" value="${esc(profile.name)}"></label><label>CARRO</label><div class="car-options">${CARS.map(c=>button(c.name,`car:${c.id}`,profile.body===c.id?'selected':'')).join('')}</div><label>COLOR DE LA CARROCERÍA</label><div class="swatches">${['#248bff','#ff8b32','#ef3340','#ffd35b','#74d6ab','#b57bff','#f2f5f7','#252b35'].map(c=>`<button class="swatch" style="background:${c}" data-color="${c}" aria-label="Color ${c}"></button>`).join('')}<input id="car-color" type="color" value="${profile.color}" aria-label="Elegir color"></div><p id="garage-credit">${esc(CARS.find(c=>c.id===profile.body)?.credit)}</p><p class="muted">Tu selección se guarda en este navegador y se usa también en LAN.</p></div>${back()}`}
- function privateMenu(){return `<div class="page-title">PARTIDA PRIVADA</div><div class="transport-tabs">${button('LOCAL · SIN SERVIDOR','local-private')}${button('LAN','transport:lan',transport==='lan'?'selected':'')}${button('ONLINE · BETA','transport:online',transport==='online'?'selected':'')}</div><div class="server-line"><label>SERVIDOR<input id="server-address" placeholder="${transport==='lan'?'http://192.168.1.10:8080':'https://tu-servidor.onrender.com'}" value="${esc(serverBase)}"></label>${button('BUSCAR SALAS','refresh')}</div><p class="muted">${transport==='lan'?'Las salas públicas de este servidor y los servidores LAN descubiertos aparecen aquí. También puedes escribir la dirección del anfitrión.':'La conexión online está preparada. Necesitas la dirección de un servidor publicado con HTTPS.'}</p><div class="private-columns"><section class="panel"><h2>UNIRSE A UNA SALA</h2><div id="room-list">Buscando salas…</div></section><section class="panel"><h2>CREAR SALA</h2><form id="create-room"><label>NOMBRE<input name="name" maxlength="40" value="Sala de ${esc(profile.name)}" required></label><div class="field-pair"><label>AZUL<select name="blue">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label><label>NARANJA<select name="orange">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label></div><label>DIFICULTAD<select name="difficulty"><option value="casual">Normal</option><option value="competitive">Difícil</option></select></label><label>TU EQUIPO<select name="team"><option value="0">Azul</option><option value="1">Naranja</option></select></label><label class="check"><input type="checkbox" name="public" checked> Pública en la lista de salas</label><label>CONTRASEÑA<input type="password" name="password" maxlength="64" required autocomplete="new-password"></label><p class="muted">Desmarca «Pública» para una sala solo para ti y bots. Máximo 5 puestos por equipo.</p><button type="submit" class="primary">CREAR PARTIDA</button></form></section></div>${back()}`}
+ function privateMenu(){return `<div class="page-title">PARTIDA PRIVADA</div><div class="transport-tabs">${button('LOCAL · SIN SERVIDOR','local-private')}${button('LAN','transport:lan',transport==='lan'?'selected':'')}${button('ONLINE · BETA','transport:online',transport==='online'?'selected':'')}</div><div class="server-line"><label>SERVIDOR<input id="server-address" placeholder="${transport==='lan'?'http://192.168.1.10:8080':'https://tu-servidor.onrender.com'}" value="${esc(serverBase)}"></label>${button('BUSCAR SALAS','refresh')}</div><p class="muted">${transport==='lan'?'Las salas públicas de este servidor y los servidores LAN descubiertos aparecen aquí. También puedes escribir la dirección del anfitrión.':'La conexión online está preparada. Necesitas la dirección de un servidor publicado con HTTPS.'}</p><div class="private-columns"><section class="panel"><h2>UNIRSE A UNA SALA</h2><div id="room-list">Buscando salas…</div></section><section class="panel"><h2>CREAR SALA</h2><form id="create-room"><label>NOMBRE<input name="name" maxlength="40" value="Sala de ${esc(profile.name)}" required></label><div class="field-pair"><label>AZUL<select name="blue">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label><label>NARANJA<select name="orange">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label></div><label>DIFICULTAD<select name="rank">${['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'].map((name,i)=>`<option value="${i}" ${i===2?'selected':''}>${name}</option>`).join('')}</select></label><label>TU EQUIPO<select name="team"><option value="0">Azul</option><option value="1">Naranja</option></select></label><label class="check"><input type="checkbox" name="public" checked> Pública en la lista de salas</label><label>CONTRASEÑA<input type="password" name="password" maxlength="64" required autocomplete="new-password"></label><p class="muted">Desmarca «Pública» para una sala solo para ti y bots. Máximo 5 puestos por equipo.</p><button type="submit" class="primary">CREAR PARTIDA</button></form></section></div>${back()}`}
  function localPrivateMenu(){return `<div class="page-title">PARTIDA LOCAL</div><section class="panel local-match-panel"><p class="muted">Solo tú y bots. Sin servidor. No cambia tu XP ni tu rango competitivo.</p><form id="local-match"><div class="field-pair"><label>EQUIPO AZUL<select name="blue">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label><label>EQUIPO NARANJA<select name="orange">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label></div><label>TU EQUIPO<select name="team"><option value="0">Azul</option><option value="1">Naranja</option></select></label><label>NIVEL DE LOS BOTS<select name="rank">${['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'].map((name,i)=>`<option value="${i}" ${i===2?'selected':''}>${name}</option>`).join('')}</select></label><p class="muted">El número incluye tu puesto. El resto son bots. La dificultad aproxima cada rango dentro de este prototipo.</p><button class="primary" type="submit">COMENZAR PARTIDO</button></form></section>${button('‹ VOLVER','private','back')}`}
  function shareAddress(){if(transport==='lan'&&/localhost|127\.0\.0\.1/.test(serverBase)&&serverInfo?.addresses?.length){const ip=serverInfo.addresses.find(a=>/^(192\.168\.|10\.)/.test(a))||serverInfo.addresses[0];return`http://${ip}:${serverInfo.port}`}return serverBase}
  function lobbyMenu(){return `<div class="page-title">SALA ${esc(room?.id||'')}</div><section class="lobby panel"><h2>${esc(room?.name)}</h2><p class="muted">Comparte esta dirección con los demás: <strong>${esc(shareAddress())}</strong></p><div id="lobby-players"></div><p>${networkOwner?'Tú decides el equipo de cada persona que solicita entrar. Los puestos libres los ocupan bots.':'Ya tienes un puesto asignado. Reemplazas a un bot del equipo.'}</p>${button(networkOwner&&(stateB?.phase==='lobby')?'INICIAR PARTIDO':'ENTRAR AL PARTIDO','enter-room','primary')}${networkOwner?button('REINICIAR PARTIDO','restart-network'):''}${button(networkOwner?'CERRAR SALA Y SALIR':'ABANDONAR SALA','leave-room','danger')}</section>`}
  function pauseMenu(){return `<div class="pause-panel panel"><span class="eyebrow">${esc(label)}</span><h1>EN PAUSA</h1><p>${source==='network'?'Tu carro queda sin controles; los demás siguen jugando.':'La simulación está pausada.'}</p>${button('CONTINUAR','resume','primary')}${source==='offline'&&offlineOptions?.difficulty!=='competitive'||source==='network'&&networkOwner?button('REINICIAR SAQUE','reset'):''}${button(source==='network'?(networkOwner?'CERRAR SALA Y SALIR':'ABANDONAR SALA'):'VOLVER AL MENÚ','leave-room','danger')}</div>`}
- function results(){const score=stateB?.score||[0,0],own=stateB?.cars.find(c=>c.slot===slot);return `<div class="results-panel"><div class="result-summary"><span class="eyebrow">PARTIDO TERMINADO</span><h1>${score[0]>score[1]?'AZUL':'NARANJA'} GANA</h1><p class="result-score">${score[0]} — ${score[1]}</p><p class="personal-achievement">${esc(own?post.achievement(own):'')}</p><p id="post-caption" class="eyebrow">MEJORES JUGADAS</p><div class="result-actions">${button('PODIO / JUGADAS','post-toggle')}${source==='offline'||networkOwner?button('REVANCHA','rematch','primary'):''}${button('VOLVER AL MENÚ','leave-room')}</div><p class="muted">En el podio: A/D gira · salto para celebrar · turbo. Tu auto permanece en su puesto.</p>${hub.awardHTML()}</div><div class="result-tables">${scoreboardHTML(stateB,slot)}</div></div>`}
+ function results(){const score=stateB?.score||[0,0],own=stateB?.cars.find(c=>c.slot===slot);return `<div class="results-panel"><div class="result-summary"><span class="eyebrow">PARTIDO TERMINADO</span><h1>${score[0]>score[1]?'AZUL':'NARANJA'} GANA</h1><p class="result-score">${score[0]} — ${score[1]}</p><p class="personal-achievement">${esc(own?post.achievement(own):'')}</p><p id="post-caption" class="eyebrow">MEJORES JUGADAS</p><div class="result-actions">${source==='offline'||networkOwner?button('REVANCHA','rematch','primary'):''}${button('VOLVER AL MENÚ','leave-room')}</div>${hub.resultRankHTML(`${stateB.cars.filter(c=>c.team===0).length}v${stateB.cars.filter(c=>c.team===1).length}`)}${hub.awardHTML(false)}</div><div class="result-tables">${scoreboardHTML(stateB,slot)}</div></div>`}
 
+ function podiumHTML(){return `<div class="victory-title ${post.winner===1?'orange':''}"><span>EQUIPO GANADOR</span><h1>${post.winner===0?'AZUL':'NARANJA'}</h1><p class="victory-mvp">MVP<br><b>+${post.state.stats.find(s=>s.slot===post.winners[0]?.slot)?.points||0}</b></p></div><div class="victory-labels">${post.winners.map((c,i)=>`<div class="victory-label" data-podium-slot="${c.slot}"><b>${esc(c.profile?.name||'BOT')}</b>${post.accolades(c).map(a=>`<span>${esc(a.title)}</span><small>${esc(a.detail)}</small>`).join('')}</div>`).join('')}</div><p class="victory-help">${post.winners.some(c=>c.slot===slot)?'Gira, salta y usa turbo para celebrar en tu puesto':'Celebración del equipo ganador'} · Los resultados aparecen enseguida</p>`}
  function renderFront(){
   front.hidden=screen==='game';document.body.dataset.screen=screen;
-  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
+  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='podium'?podiumHTML():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
   if(screen==='local-private')$('local-match').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);offline({blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:.12+Number(f.get('rank'))/7*.88,privateLocal:true})};
   if(screen==='garage'){
    $('driver-name').onchange=e=>{profile=cleanProfile({...profile,name:e.target.value});persist();preview.apply(profile)};
@@ -63,7 +64,6 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  }
  front.addEventListener('click',e=>{const color=e.target.closest('[data-color]');if(color){profile.color=color.dataset.color;persist();preview.apply(profile);$('car-color').value=profile.color;return}const target=e.target.closest('[data-action]');if(target&&!target.disabled)action(target.dataset.action)});
  async function action(a){
-  if(a==='post-toggle'){post.toggle();return}
   if(a==='flip-indicator-toggle'){flipIndicator.toggle();audio.indicatorEnabled=flipIndicator.enabled;renderFront();return}
   if(a==='sound-toggle'){audio.toggle();renderFront();return}
   if(a==='local-private'){show('local-private','private');return}
@@ -76,7 +76,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   if(a==='training'){await offline({blue:1,orange:0,training:true});return}
   if(a.startsWith('offline:')){const[,difficulty,n]=a.split(':');await offline({blue:+n,orange:+n,difficulty});return}
   if(a.startsWith('car:')){profile.body=a.split(':')[1];persist();preview.apply(profile);renderFront();return}
-  if(a.startsWith('transport:')){transport=a.split(':')[1];try{serverBase=localStorage.getItem('rocket-server-'+transport)||(transport==='lan'?location.origin:'')}catch{serverBase=transport==='lan'?location.origin:''}renderFront();return}
+  if(a.startsWith('transport:')){transport=a.split(':')[1];try{serverBase=localStorage.getItem('rocket-server-'+transport)||(transport==='lan'?location.origin:ONLINE_SERVER)}catch{serverBase=transport==='lan'?location.origin:ONLINE_SERVER}renderFront();return}
   if(a==='refresh'){refreshRooms();return}
   if(a.startsWith('join:')){selectedRoom=roomEntries[+a.split(':')[1]];showJoin();return}
   if(a==='resume'){followCamera.reset();session.start();return}
@@ -95,14 +95,14 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  async function refreshRooms(){
   if(screen!=='private')return;const list=$('room-list');try{
    if(!$('server-address').value.trim())throw Error('Escribe la dirección del servidor publicado.');serverBase=serverURL($('server-address').value);try{localStorage.setItem('rocket-server-'+transport,serverBase)}catch{}
-   const [info,response,discovery]=await Promise.all([fetch(serverBase+'/api/info',{signal:AbortSignal.timeout(4000)}).then(r=>r.json()),fetch(serverBase+'/api/rooms',{signal:AbortSignal.timeout(4000)}).then(r=>r.json()),transport==='lan'?fetch(serverBase+'/api/discovery',{signal:AbortSignal.timeout(4000)}).then(r=>r.json()).catch(()=>[]):[]]);
+   const [info,response,discovery]=await Promise.all([fetch(serverBase+'/api/info',{signal:AbortSignal.timeout(transport==='online'?90000:4000)}).then(r=>r.json()),fetch(serverBase+'/api/rooms',{signal:AbortSignal.timeout(transport==='online'?90000:4000)}).then(r=>r.json()),transport==='lan'?fetch(serverBase+'/api/discovery',{signal:AbortSignal.timeout(transport==='online'?90000:4000)}).then(r=>r.json()).catch(()=>[]):[]]);
    if(screen!=='private')return;serverInfo=info;roomEntries=response.map(r=>({...r,url:serverBase}));for(const peer of discovery)for(const r of peer.rooms||[])if(!roomEntries.some(p=>p.id===r.id))roomEntries.push({...r,url:peer.url});
    list.innerHTML=roomEntries.length?roomEntries.map((r,i)=>`<div class="room-row"><div><strong>${esc(r.name)}</strong><small>${r.blue}v${r.orange} · ${r.players}/${r.max} personas · ${r.difficulty==='competitive'?'Difícil':'Normal'} · ${r.password?'Con contraseña':'Abierta'}</small></div><button data-action="join:${i}" ${!r.ready?'disabled':''}>${r.ready?'UNIRSE':'PREPARANDO'}</button></div>`).join(''):'<p class="muted">No hay salas públicas. Puedes crear una.</p>';
   }catch{if(screen==='private')list.innerHTML='<p class="muted">No se encontró un servidor. Revisa la dirección del anfitrión y que esté encendido.</p>'}
  }
  async function connect(url){network?.close();network=new NetClient(url,networkMessage);await network.connect();return network}
  async function createRoom(form){
-  if(!form.reportValidity())return;const f=new FormData(form),options={name:f.get('name'),blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:f.get('difficulty'),public:f.get('public')==='on',password:f.get('public')==='on'?f.get('password'):''};
+  if(!form.reportValidity())return;const f=new FormData(form),options={name:f.get('name'),blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:.12+Number(f.get('rank'))/7*.88,public:f.get('public')==='on',password:f.get('public')==='on'?f.get('password'):''};
   try{serverBase=serverURL($('server-address').value);await connect(serverBase);source='network';show('loading');network.send('create',{options,profile})}catch(e){toast(e.message);show('private','play')}
  }
  function showJoin(){
@@ -113,7 +113,7 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  function updateLobby(){const target=$('lobby-players');if(!target||!stateB)return;target.innerHTML=[0,1].map(team=>`<div class="team-list ${team?'orange':'blue'}"><h3>${team?'NARANJA':'AZUL'}</h3>${stateB.cars.filter(c=>c.team===team).map(c=>`<p>${esc(c.profile?.name||'BOT')} <small>${c.profile?.human?'JUGADOR':'BOT'}${c.slot===slot?' · TÚ':''}</small></p>`).join('')}</div>`).join('')}
  function networkMessage(m){
   if(m.type==='loading'){show('loading');return}
-  if(m.type==='joined'){effects.reset();effects.seed(m.state?.events);awardUntil=0;room=m.room;slot=m.slot;networkOwner=m.owner;source='network';label=`PRIVADA ${m.options.blue}v${m.options.orange}`;netA=netB=m.state;stateA=stateB=m.state;netAt=performance.now();lastPhase='';show('lobby');return}
+  if(m.type==='joined'){hub.abandon();hub.award=null;effects.reset();effects.seed(m.state?.events);awardUntil=0;room=m.room;slot=m.slot;networkOwner=m.owner;source='network';label=`PRIVADA ${m.options.blue}v${m.options.orange}`;netA=netB=m.state;stateA=stateB=m.state;netAt=performance.now();lastPhase='';show('lobby');return}
   if(m.type==='snapshot'){
    if(!Array.isArray(m.state?.cars)||m.state.cars.length>10)return;netA=netB?.phase===m.state.phase?netB:m.state;netB=m.state;netAt=performance.now();
    if(screen==='lobby'){stateB=netB;updateLobby()}
@@ -135,14 +135,14 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  }
  addEventListener('keydown',e=>{
   if(e.code==='Tab'&&running){e.preventDefault();tabHeld=true;scoreAt=0;return}
-  if(!running&&screen==='results'){if(controls.used(e.code)){e.preventDefault();keys[e.code]=true}return}
+  if(!running&&screen==='podium'){if(controls.used(e.code)){e.preventDefault();keys[e.code]=true}return}
   if(!running){if(e.code==='Escape'&&['garage','play','casual','competitive','private','local-private','settings','profile'].includes(screen))show(screen==='casual'||screen==='competitive'?'play':'home');return}
   if(controls.used(e.code)||e.code==='Escape')e.preventDefault();
   if(!keys[e.code]){if(e.code==='Escape')session.pause('escape');if(controls.matches('camera',e.code))ballCam=!ballCam;if(controls.matches('skip',e.code))source==='network'?network?.send('skip'):simulation?.skip();if(controls.matches('reset',e.code)){if(source==='offline'&&offlineOptions?.difficulty!=='competitive')simulation?.resetRound();else if(source==='network'&&networkOwner)network?.send('reset')}}keys[e.code]=true;
- });addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'){tabHeld=false;$('match-scoreboard').hidden=true}});canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('mousedown',e=>{if(running||screen==='results'&&e.target===canvas){e.preventDefault();keys['Mouse'+e.button]=true}});addEventListener('mouseup',e=>keys['Mouse'+e.button]=false);
+ });addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'){tabHeld=false;$('match-scoreboard').hidden=true}});canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('mousedown',e=>{if(running||screen==='podium'&&e.target===canvas){e.preventDefault();keys['Mouse'+e.button]=true}});addEventListener('mouseup',e=>keys['Mouse'+e.button]=false);
  function paint(a,b,t){
   effects.sync(b.events,slot,event=>{const epic=event.type==='epic-save';$('save-title').textContent=epic?'¡SALVADA ÉPICA!':'¡SALVADA!';$('save-award').dataset.epic=String(epic);$('save-award').style.animation='none';void $('save-award').offsetWidth;$('save-award').style.animation='';awardUntil=elapsed+2.8});
-  if(camera.fov!==matchFov){camera.fov=matchFov;camera.updateProjectionMatrix()}
+  if(b.phase!=='highlight'&&camera.fov!==matchFov){camera.fov=matchFov;camera.updateProjectionMatrix()}
   if(!pads)pads=createBoostPads(scene,b.pads);pads.update(b.pads,elapsed);preview.setVisible(false);
   for(const [id,v] of views)if(!b.cars.some(c=>c.slot===id))v.setVisible(false);
   for(const c of b.cars){let v=views.get(c.slot);if(!v){v=createVehicle(scene);views.set(c.slot,v)}v.apply(c.profile||{name:'BOT',body:'octane',color:c.team?'#ff8b32':'#248bff'});const p=a.cars.find(x=>x.slot===c.slot)||c;const smooth=p.isDemoed===c.isDemoed&&new T.Vector3().fromArray(p.position).distanceTo(new T.Vector3().fromArray(c.position))<8;
@@ -151,10 +151,11 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   ball.visible=true;ballShadow.visible=true;ball.position.fromArray(a.ball.position).lerp(new T.Vector3().fromArray(b.ball.position),t);ball.quaternion.fromArray(a.ball.quaternion).slerp(new T.Quaternion().fromArray(b.ball.quaternion),t);ballShadow.position.set(ball.position.x,.015,ball.position.z);ballShadow.material.opacity=Math.max(.04,.22-ball.position.y*.008);
   ballTrail.update(ball.position,b.ball.velocity,source==='offline'&&!running&&screen!=='results'?0:frameDelta,b.phase,b.ball.lastTouchTeam);
   const own=b.cars.find(c=>c.slot===slot)||b.cars[0],view=views.get(own.slot);
-  if(b.phase==='goal'){
+  if(b.phase==='highlight'){/* Replay camera has a single owner: paintPost. */
+  }else if(b.phase==='goal'){
    const target=new T.Vector3(0,2.5,b.goalEnd*50.6),desired=new T.Vector3(13,6,b.goalEnd*35);camera.position.lerp(desired,.16);camera.up.set(0,1,0);camera.lookAt(target);replayReady=false;
   }else if(b.phase==='replay'){
-   const target=ball.position.clone(),desired=constrainArenaCamera(target.clone().add(new T.Vector3(target.x>0?-9:9,6.5,-b.goalEnd*12)));if(replayReady)camera.position.lerp(desired,.12);else camera.position.copy(desired);camera.up.set(0,1,0);camera.lookAt(target);replayReady=true;
+   const target=ball.position.clone(),desired=constrainArenaCamera(target.clone().add(new T.Vector3(b.goalEnd*9,6.5,-b.goalEnd*12)));if(replayReady)camera.position.lerp(desired,.12);else camera.position.copy(desired);camera.up.set(0,1,0);camera.lookAt(target);replayReady=true;
   }else{replayReady=false;velocity.fromArray(own.velocity);followCamera.update(1/60,{position:view.root.position,quaternion:view.root.quaternion,velocity,ball:ball.position,onGround:own.onGround,isFlipping:own.isFlipping,ballCam})}
   $('blue').textContent=b.score[0];$('orange').textContent=b.score[1];$('match-type').textContent=label;$('match-clock').textContent=b.training?'∞':b.overtime?'OT':`${Math.floor(Math.ceil(b.remaining)/60)}:${String(Math.ceil(b.remaining)%60).padStart(2,'0')}`;
   $('speed').textContent=Math.round(Math.hypot(...own.velocity)*3.6);$('boost').textContent=Math.round(own.boost);$('boostbar').style.width=own.boost+'%';$('boost-track').setAttribute('aria-valuenow',Math.round(own.boost));
@@ -164,39 +165,52 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   $('replay').hidden=b.phase!=='replay';document.body.classList.toggle('replaying',b.phase==='replay');$('replay-progress').style.width=b.replayProgress*100+'%';
  }
  function paintPost(dt){
-  const input=readInput(),p=post.update(dt,input),caption=$('post-caption');if(caption)caption.textContent=p.title;
+  const input=readInput(),p=post.update(dt,input,stateB.postmatch),caption=$('post-caption');if(p.mode==='highlights'&&screen==='podium'){keys={};screen='results';renderFront()}if(caption)caption.textContent=p.title;
   $('replay').hidden=true;$('goal').hidden=true;document.body.classList.remove('replaying');
   if(p.mode==='highlights'&&p.sample){
    podium.visible=false;const {a,b,alpha}=p.sample;paint({...stateB,...a},{...stateB,...b,phase:'highlight',events:[]},alpha);
-   const target=ball.position.clone(),desired=constrainArenaCamera(target.clone().add(new T.Vector3(target.x>0?-10:10,6,13)));camera.position.lerp(desired,1-Math.exp(-dt*4));camera.up.set(0,1,0);camera.lookAt(target);return;
+   const target=ball.position.clone();
+   if(p.clip!==paintPost.clip){paintPost.clip=p.clip;paintPost.side=target.x>0?-1:1;paintPost.target=target.clone();ballTrail.clear()}
+   paintPost.target.lerp(target,1-Math.exp(-dt*7));
+   const desired=constrainArenaCamera(paintPost.target.clone().add(new T.Vector3(paintPost.side*11,7,15)));
+   if(camera.fov!==65){camera.fov=65;camera.updateProjectionMatrix()}camera.position.lerp(desired,1-Math.exp(-dt*3));camera.up.set(0,1,0);camera.lookAt(paintPost.target);return;
   }
+  if(p.mode==='highlights'){podium.visible=false;paint(stateB,{...stateB,phase:'highlight',events:[]},1);camera.position.lerp(new T.Vector3(18,14,27),1-Math.exp(-dt*3));camera.up.set(0,1,0);camera.lookAt(0,1,0);return}
   ball.visible=false;ballShadow.visible=false;ballTrail.clear();podium.visible=true;for(const v of views.values())v.setVisible(false);
-  const own=post.state.cars.find(c=>c.slot===slot),members=[...post.winners];if(own&&!members.some(c=>c.slot===slot))members.push(own);
-  const offsets=[0,-3.8,3.8,-7.6,7.6];
-  podium.children.forEach(m=>m.visible=false);
-  members.forEach((car,i)=>{const losing=car.team!==post.winner,x=losing?0:offsets[i],z=losing?4:0,y=i===0?.7:.15,platform=podium.children[i];platform.visible=true;platform.position.set(x,y/2,z);platform.scale.y=y/.3;
-   const v=views.get(car.slot);if(!v)return;const pose=car.slot===slot?p.pose:{yaw:Math.sin(elapsed*.8+i)*.12,jump:0,flip:0};v.setVisible(true,true);v.root.position.set(x,y+.17+pose.jump,z);v.root.quaternion.setFromEuler(new T.Euler((car.slot===slot?(input.pitch||0)*.2:0)+pose.flip,Math.PI+pose.yaw,0));v.flame.visible=car.slot===slot&&input.boost;v.update(elapsed);
+  const members=post.winners;
+  const offsets=[0,-2.1,2.1,-4.5,4.5];podium.children.forEach(m=>m.visible=false);
+  members.forEach((car,i)=>{const x=offsets[i],z=i===0?3.5:i<3?1:-1;
+   const v=views.get(car.slot);if(!v)return;const pose=p.poses?.[car.slot]||{yaw:Math.sin(post.clock*.8+i)*.08,jump:0,flip:0,pitch:0};
+   const rotation=new T.Quaternion().setFromEuler(new T.Euler((pose.pitch||0)+pose.flip,Math.PI+(i===0?-.45:i%2?-.6:.6)+pose.yaw,0));
+   const target=new T.Vector3(x,v.groundHeight(rotation)-.02+pose.jump,z);
+   let smooth=podiumPoses.get(car.slot);if(!smooth){smooth={position:target.clone(),rotation:rotation.clone()};podiumPoses.set(car.slot,smooth)}
+   const blend=1-Math.exp(-dt*25);smooth.position.lerp(target,blend);smooth.rotation.slerp(rotation,blend);
+   v.setVisible(true,false);v.root.position.copy(smooth.position);v.root.quaternion.copy(smooth.rotation);v.flame.visible=!!pose.boost;v.update(elapsed);
+   const shadow=podium.children[i];shadow.visible=true;shadow.position.set(x,.002,z);shadow.material.opacity=.35/(1+pose.jump*2);shadow.scale.setScalar(1+pose.jump*.25);
+
   });
   if(camera.fov!==48){camera.fov=48;camera.updateProjectionMatrix()}
-  const xs=post.winners.map((_,i)=>offsets[i]),center=(Math.min(...xs)+Math.max(...xs))/2,width=Math.max(...xs)-Math.min(...xs)+4;
-  const distance=Math.max(9,width/(2*Math.tan(24*Math.PI/180)*camera.aspect));
-  const target=new T.Vector3(center,.9,0),desired=new T.Vector3(center+.6,3.6,distance);camera.position.lerp(desired,1-Math.exp(-dt*4));camera.up.set(0,1,0);camera.lookAt(target);
+  const xs=post.winners.map((_,i)=>offsets[i]),center=(Math.min(...xs)+Math.max(...xs))/2,width=Math.max(...xs)-Math.min(...xs)+2.4;
+  const distance=Math.max(6.7,width/(2*Math.tan(24*Math.PI/180)*camera.aspect)+1.7);
+  const target=new T.Vector3(center,.35,1.4),desired=new T.Vector3(center+.25,1.7,distance+(1-(p.progress??1))*.8);if(!paintPost.podiumReady){camera.position.copy(desired);paintPost.podiumReady=true}camera.position.lerp(desired,1-Math.exp(-dt*4));camera.up.set(0,1,0);camera.lookAt(target);
+  for(const car of members){const tag=document.querySelector(`[data-podium-slot="${car.slot}"]`),v=views.get(car.slot);if(tag&&v){const pos=v.root.position.clone().add(new T.Vector3(0,-.15,0)).project(camera);tag.style.left=((pos.x+1)*innerWidth/2)+'px';tag.style.top=((1-pos.y)*innerHeight/2+22)+'px'}}
  }
  function frame(now){
   requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(.05,frameMs/1000);frameDelta=dt;last=now;elapsed+=dt;renderBudget.update(frameMs,now,!document.hidden);
-  const inMatch=['game','pause','results','lobby'].includes(screen)&&!!stateB;
+  const inMatch=['game','pause','podium','results','lobby'].includes(screen)&&!!stateB;
   $('hud').hidden=!inMatch;
   $('save-award').hidden=!inMatch||elapsed>awardUntil||awardUntil===0;
   effects.update(source==='offline'&&!running&&screen!=='results'?0:dt,inMatch);
-  if(source==='offline'&&simulation&&running){const controls=readInput();acc+=dt;while(acc>=1/120){simulation.tick(1/120,{[slot]:controls});acc-=1/120}const next=simulation.view();stateA=stateB?.phase===next.phase?stateB:next;stateB=next}
-  if(source==='network'&&netB){stateA=netA||netB;stateB=netB;if(running&&now-lastInput>1000/30){network.send('input',{controls:readInput()});lastInput=now}}
-  if(inMatch&&stateB){post.observe(stateB,running||source==='network'?dt:0);if(screen!=='results')paint(stateA||stateB,stateB,source==='network'?Math.min(1,(now-netAt)/(1000/30)):1);if(stateB.phase==='finished'&&lastPhase!=='finished'){hub.finish(stateB,slot);post.finish(stateB,slot);screen='results';session.pause('finished');renderFront()}lastPhase=stateB.phase}
+  if(source==='offline'&&simulation&&(running||screen==='podium'||screen==='results')){const controls=readInput();acc+=dt;while(acc>=1/120){simulation.tick(1/120,{[slot]:controls});acc-=1/120}const next=simulation.view();stateA=stateB?.phase===next.phase?stateB:next;stateB=next}
+  if(source==='network'&&netB){stateA=netA||netB;stateB=netB;if((running||screen==='podium')&&now-lastInput>1000/30){network.send('input',{controls:readInput()});lastInput=now}}
+  if(source==='network'&&['podium','results'].includes(screen)&&stateB?.phase!=='finished'){lastPhase='';session.start()}
+  if(inMatch&&stateB){post.observe(stateB,running||source==='network'?dt:0);if(screen!=='results'&&screen!=='podium')paint(stateA||stateB,stateB,source==='network'?Math.min(1,(now-netAt)/(1000/30)):1);if(stateB.phase==='finished'&&lastPhase!=='finished'){hub.finish(stateB,slot);post.finish(stateB,slot);screen='podium';paintPost.clip=null;paintPost.podiumReady=false;podiumPoses.clear();session.pause('finished');renderFront()}lastPhase=stateB.phase}
   else{ballTrail.clear();for(const v of views.values())v.setVisible(false);preview.setVisible(true,false);preview.flame.visible=false;ball.visible=false;ballShadow.visible=false;$('replay').hidden=true;$('goal').hidden=true;document.body.classList.remove('replaying');if(camera.fov!==36){camera.fov=36;camera.updateProjectionMatrix()}camera.position.set(1.7+Math.sin(elapsed*.12)*.06,.85,32.2);camera.up.set(0,1,0);camera.lookAt(-.45,.38,30)}
   $('match-scoreboard').hidden=!(tabHeld&&running&&inMatch);if(tabHeld&&running&&inMatch&&now-scoreAt>150){scoreAt=now;$('match-scoreboard').innerHTML=scoreboardHTML(stateB,slot)}
-  if(screen==='results'&&post.finished)paintPost(dt);else podium.visible=false;
+  if((screen==='results'||screen==='podium')&&post.finished)paintPost(dt);else podium.visible=false;
   audio.indicatorEnabled=flipIndicator.enabled;
-  if(!inMatch||screen==='results'&&post.mode==='podium')flipIndicator.update([],views,dt,'menu',slot);
-  audio.update(stateB,slot,inMatch&&(running||source==='network'||screen==='results'),dt);
+  if(!inMatch||screen==='podium')flipIndicator.update([],views,dt,'menu',slot);
+  audio.update(stateB,slot,inMatch&&(running||source==='network'||screen==='results'||screen==='podium'),dt);
   stadium.update(inMatch?stateB.remaining:300,inMatch?stateB.training:true,inMatch&&stateB.overtime,elapsed);
   renderer.render(scene,camera);
   if(now-statsAt>1000){statsAt=now;canvas.dataset.renderStats=JSON.stringify({fps:Math.round(1000/renderBudget.average),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,pixelRatio:Number(renderBudget.ratio.toFixed(2)),crowd:stadium.crowdCount,crowdTriangles:stadium.crowdTriangles})}

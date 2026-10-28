@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.js';
-import {arenaPerimeter} from './arena-shape.js';
-import {stadiumTime} from './stadium-time.js';
-import {createCrowd} from './crowd.js';
-import {softGlow} from './boost-visual.js';
-import {createAirTraffic} from './air-traffic.js';
+import {arenaPerimeter} from './arena-shape.js?v=stadium-finale-20261027';
+import {stadiumTime} from './stadium-time.js?v=stadium-finale-20261027';
+import {createCrowd} from './crowd.js?v=stadium-finale-20261027';
+import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
+import {createAirTraffic} from './air-traffic.js?v=stadium-finale-20261027';
 
 // Static architecture is batched; the 2D crowd uses one instanced draw call.
 const unitBox=new T.BoxGeometry(1,1,1).toNonIndexed();
@@ -61,7 +61,54 @@ export function createStadium(scene,{sun,hemisphere,renderer}){
   detail.box(.5,30,.5,x,15,z,0x526275);detail.box(6,2.4,.6,x,30,z,0x14243a);
   for(let u=0;u<8;u++)for(let v=0;v<3;v++)emitters.box(.48,.42,.08,x-2.5+u*.7,29.3+v*.65,z+(x>0?-.35:.35),0xe2f3ff);
  }
- for(let i=0;i<38;i++){const angle=i/38*Math.PI*2,r=132+(i%3)*15,x=Math.sin(angle)*r,z=Math.cos(angle)*r,h=18+(Math.sin(i*7.3)*.5+.5)*40;detail.box(9+i%5,h,10,x,h/2-3,z,0x70829a);for(let y=6;y<h;y+=5)for(let j=-1;j<=1;j++)emitters.box(1.1,.65,10.05,x+j*2.4,y,z,i%3?0xa4d7ff:0xffd5a0)}
+ // Ground, stadium foundation and landscaped approach roads share the static batches.
+ detail.box(500,.5,500,0,-.6,0,0x596b58);
+ detail.box(185,.3,205,0,-.29,0,0x879295);
+ for(const side of [-1,1]){detail.box(4,1.1,186,side*81,-.45,0,0x34424d);detail.box(158,1.1,4,0,-.45,side*91,0x34424d)}
+ for(const side of [-1,1]){
+  detail.box(500,.04,13,0,-.32,side*116,0x303c48);
+  detail.box(13,.04,500,side*104,-.32,0,0x303c48);
+  detail.box(500,.06,2.5,0,-.25,side*107.5,0xc3c4b6);
+  detail.box(2.5,.06,500,side*95.5,-.25,0,0xc3c4b6);
+  for(let j=-22;j<=22;j++){
+   detail.box(3,.03,.15,j*10,-.28,side*116,0xd7d7bd);
+   detail.box(.15,.03,3,side*104,-.28,j*10,0xd7d7bd);
+  }
+  // Entrance plazas, stairs, planted beds and sculpted trees.
+  for(const z of [-42,0,42]){
+   detail.box(10,.3,15,side*88,-.1,z,0xb9c2bd);
+   detail.box(2,.5,12,side*91,.15,z,0x495c4a);
+   for(const dz of [-4,0,4]){detail.box(.22,2,.22,side*91,1,z+dz,0x685747);const g=new T.IcosahedronGeometry(1.4,0);detail.add(g,new T.Matrix4().makeTranslation(side*91,3,z+dz),0x4c775e);g.dispose()}
+  }
+ }
+ // Aligned city blocks give the skyline streets, varied rooflines and consistent foundations.
+ for(const side of [-1,1])for(let row=0;row<2;row++)for(let col=-4;col<=4;col++){
+  const x=side*(133+row*38),z=col*29,w=15+(col+4)%3*3,d=18,h=18+((col+8)*17+row*13)%46;
+  const tint=[0x7b8fa0,0x9ba8ae,0x637c91,0x879ca8][(col+8+row)%4];
+  detail.box(w,h,d,x,h/2-.35,z,tint);
+  detail.box(w+1,.7,d+1,x,h-.15,z,0x334959);
+  detail.box(w*.65,3,d*.65,x,h+1.5,z,0x647c8d);
+  detail.box(w+1,1.4,d+1,x,.3,z,0x4b606f);
+  for(let y=3;y<h-1;y+=3.8){
+   detail.box(w+.1,.2,d+.1,x,y-1,z,0x425b70);
+   for(let j=-1;j<=1;j++)for(const face of [-1,1])emitters.box(2.1,1.15,.025,x+j*w/4,y,z+face*(d/2+.025),((col+row+j+8)%3)?0xa4cde5:0xffd9a4);
+   for(let j=-1;j<=1;j++)for(const face of [-1,1])emitters.box(.025,1.15,2.1,x+face*(w/2+.025),y,z+j*d/4,0x9dc5df);
+  }
+ }
+ // Open cantilever canopies frame the pitch without closing the sky.
+ for(const side of [-1,1])for(const z of [-42,-14,14,42]){
+  detail.box(15,.35,25,side*67,29,z,0x526a7c);
+  for(const dz of [-11,11]){detail.beam(new T.Vector3(side*76,22,z+dz),new T.Vector3(side*59,29,z+dz),.18,0x96aab8);detail.beam(new T.Vector3(side*76,36,z+dz),new T.Vector3(side*59,29,z+dz),.065,0xc6d4dc)}
+  emitters.box(.15,.1,24,side*59.5,28.8,z,side>0?0x74d7ff:0xffb56d);
+ }
+ // Central suspended scoreboard, four screens using one small original canvas texture.
+ const screenCanvas=document.createElement('canvas');screenCanvas.width=512;screenCanvas.height=256;
+ const sc=screenCanvas.getContext('2d');sc.fillStyle='#071c30';sc.fillRect(0,0,512,256);sc.strokeStyle='#65cfff';sc.lineWidth=10;sc.strokeRect(8,8,496,240);sc.textAlign='center';sc.fillStyle='#c5eeff';sc.font='bold italic 48px Arial';sc.fillText('ROCKET',256,108);sc.fillStyle='#ffcf86';sc.fillText('ARENA',256,169);sc.font='16px Arial';sc.fillStyle='#d6e4ed';sc.fillText('BOOST  /  FLY  /  SCORE',256,212);
+ const screenMap=new T.CanvasTexture(screenCanvas);screenMap.colorSpace=T.SRGBColorSpace;
+ const screenMat=new T.MeshBasicMaterial({map:screenMap,toneMapped:false});
+ detail.box(7,4.2,7,0,33,0,0x172e43);
+ for(let i=0;i<4;i++){const angle=i*Math.PI/2,m=new T.Mesh(new T.PlaneGeometry(6.6,3.8),screenMat);m.position.set(Math.sin(angle)*3.52,33,Math.cos(angle)*3.52);m.rotation.y=angle;scene.add(m)}
+ for(const side of [-1,1])for(const z of [-42,42])detail.beam(new T.Vector3(side*67,36,z),new T.Vector3(side*2.7,35,Math.sign(z)*2.7),.045,0x677e92);
  scene.add(detail.mesh(new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.3})));const windows=emitters.mesh(new T.MeshBasicMaterial({vertexColors:true,toneMapped:false,transparent:true}));scene.add(windows);
  const stadiumLights=[];
  for(const x of [-32,32])for(const z of [-32,32]){const light=new T.PointLight(0xc9e5ff,30,105,2);light.position.set(x,22,z);scene.add(light);stadiumLights.push(light)}
