@@ -1,5 +1,5 @@
-import {ARENA} from './arena-shape.js?v=stadium-finale-20261027';
-import {BALL_RADIUS} from './proportions.js?v=stadium-finale-20261027';
+import {ARENA} from './arena-shape.js?v=inventory-20261028';
+import {BALL_RADIUS} from './proportions.js?v=inventory-20261028';
 export function goalFrameHit(before,after,radius=BALL_RADIUS){
  if(!before||!after)return false;const p=after.position,v=before.velocity,w=after.velocity;
  if(Math.abs(Math.abs(p[2])-ARENA.length)>radius+.35)return false;

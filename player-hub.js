@@ -1,5 +1,6 @@
-import {AccountStore} from './accounts.js?v=stadium-finale-20261027';
-import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=rank-balance-20261027';
+import {equipItem,visitInventory,claimMission,claimPass,openDrop,collectDrop,recordInventoryMatch} from './inventory.js?v=inventory-20261028';
+import {AccountStore} from './accounts.js?v=bot-tiers-20261031';
+import {botSkill,cleanProgress,completeResult,levelInfo,PLAYLISTS,rankBadge,rankInfo} from './progression.js?v=bot-tiers-20261031';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export class PlayerHub{
  constructor(apply){
@@ -28,6 +29,7 @@ export class PlayerHub{
    try{this.account.session=JSON.parse(e.newValue);await this.account.restore();if(this.account.user){this.adopt();if(!this.modal.hidden){this.closeAuth();this.afterAuth?.()}}}catch{}
   });
  }
+ get inventory(){return this.account.data.inventory}
  get progress(){return this.account.data.progress}
  get canPlay(){return!!this.account.user||this.guestAccepted}
  adopt(){
@@ -35,7 +37,14 @@ export class PlayerHub{
   const pending=this.progress.pending;if(pending){const {progress}=completeResult(this.progress,{...pending,forfeit:true,won:false,seconds:0,stats:{}});this.account.data.progress=progress;this.account.persist()}
   this.context=null;this.apply(this.account.data);
  }
- saveGarage(garage){this.account.data.garage={...garage};this.account.persist()}
+ saveGarage(garage){if(garage.color!==this.account.data.garage.color)visitInventory(this.inventory,'paint');this.account.data.garage={...garage};this.account.persist()}
+ owns(id){return !!this.inventory.items[id]}
+ visit(event){visitInventory(this.inventory,event);this.account.persist()}
+ equip(id){this.account.data.garage=equipItem(this.inventory,this.account.data.garage,id);this.account.persist();this.apply(this.account.data);return this.account.data.garage}
+ claimMission(group,id){const reward=claimMission(this.inventory,group,id);this.progress.xp+=reward.xp;this.account.persist();return reward}
+ claimPass(tier){const reward=claimPass(this.inventory,tier);this.account.persist();return reward}
+ openDrop(type){const result=openDrop(this.inventory,type);this.account.persist();this.account.flush();return result}
+ collectDrop(){const reward=collectDrop(this.inventory);this.account.persist();return reward}
  saveControls(controls){this.account.data.controls=controls;this.account.persist()}
  openAuth(after){this.afterAuth=after;this.mode='signup';this.modal.querySelector('#account-error').textContent='';this.modal.hidden=false;this.renderAuth();this.form.elements[this.account.configured?'username':'email'].focus()}
  closeAuth(){this.modal.hidden=true;this.form.elements.password.value=''}
@@ -61,7 +70,7 @@ export class PlayerHub{
   if(!this.context||this.context.id!==state.matchId)return;
   const car=state.cars.find(c=>c.slot===slot),stats=state.stats?.find(s=>s.slot===slot)||{},ownTeam=car?.team??0,won=state.score[ownTeam]>state.score[1-ownTeam],best=Math.max(...(state.stats||[]).filter(r=>state.cars.some(c=>c.slot===r.slot&&c.team===ownTeam)).map(r=>r.points));
   const result=completeResult(this.progress,{...this.context,seconds:state.played,won,stats,mvp:won&&stats.points===best});
-  this.account.data.progress=result.progress;this.award=result.award;this.context=null;this.account.persist();this.account.flush();
+  this.account.data.progress=result.progress;recordInventoryMatch(this.inventory,{id:state.matchId,seconds:state.played,won,stats,xp:result.award?.xp||0});this.award=result.award;this.context=null;this.account.persist();this.account.flush();
  }
  abandon(){if(!this.context)return;const result=completeResult(this.progress,{...this.context,seconds:0,won:false,forfeit:true,stats:{}});this.account.data.progress=result.progress;this.context=null;this.award=null;this.account.persist()}
  resultRankHTML(playlist='1v1'){

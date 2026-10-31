@@ -1,4 +1,4 @@
-import {mmrBotSkill} from './bot-difficulty.js?v=rank-balance-20261027';
+import {mmrBotSkill} from './bot-difficulty.js?v=bot-tiers-20261031';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const PLAYLISTS=['1v1','2v2','3v3'];
 export const RANKS=['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'];

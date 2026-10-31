@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
+import {softGlow} from './boost-visual.js?v=inventory-20261028';
 export class BallTrail{
  constructor(scene){
   this.capacity=42;this.samples=[];this.clock=0;this.lastPhase='';this.p=new Float32Array(this.capacity*3);this.colors=new Float32Array(this.capacity*3);

@@ -1,4 +1,4 @@
-import {nextoDecisionTicks} from './bot-difficulty.js?v=rank-balance-20261027';
+import {nextoDecisionTicks} from './bot-difficulty.js?v=bot-tiers-20261031';
 // Nexto observation/action port, adapted from Rolv-Arild/Necto, CC BY-NC-SA 4.0.
 // Network observations retain the original RL units, team inversion and heading rotation.
 export function nextoObservation(state,slot,previousAction=new Array(8).fill(0)){

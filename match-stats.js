@@ -1,4 +1,4 @@
-import {incomingShot} from './ball-prediction.js?v=stadium-finale-20261027';
+import {incomingShot} from './ball-prediction.js?v=inventory-20261028';
 const blank=slot=>({slot,points:0,goals:0,assists:0,saves:0,epicSaves:0,shots:0,touches:0});
 export class MatchStats{
  constructor(count){this.rows=Array.from({length:count},(_,i)=>blank(i));this.time=0;this.eventId=0;this.roundReset()}
@@ -18,6 +18,7 @@ export class MatchStats{
   const row=this.rows[scorer.slot];row.goals++;row.points+=100;
   if(this.time-(this.shotAt.get(scorer.slot)??-99)>5){row.shots++;row.points+=10}
   const index=this.history.indexOf(scorer),assist=this.history[index-1];if(assist&&assist.team===team&&assist.slot!==scorer.slot&&this.time-assist.time<10){this.rows[assist.slot].assists++;this.rows[assist.slot].points+=50}
+  return scorer.slot;
  }
  snapshot(){return this.rows.map(r=>({...r}))}
 }

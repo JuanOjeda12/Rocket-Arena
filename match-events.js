@@ -1,9 +1,9 @@
-import {incomingShot} from './ball-prediction.js?v=stadium-finale-20261027';
+import {incomingShot} from './ball-prediction.js?v=inventory-20261028';
 export class MatchEvents{
  constructor(){this.serial=0;this.time=0;this.list=[];this.resetCounts={};this.resetRound()}
  resetRound(){this.pending=[];this.nextThreat=0;this.threats=new Map();this.lastAward=new Map();this.contactCooldown=new Map();this.list=[]}
  emit(type,details){const event={id:++this.serial,type,...details};this.list.push(event);this.list=this.list.slice(-12);return event}
- goal(end,position){this.pending=[];this.emit('goal',{end,position:[...position],team:end<0?0:1})}
+ goal(end,position,slot=null){this.pending=[];this.emit('goal',{slot,end,position:[...position],team:end<0?0:1})}
  update(before,after,dt){
   this.time+=dt;
   if(after.goal){this.pending=[];return}

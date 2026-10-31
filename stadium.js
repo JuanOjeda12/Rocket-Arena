@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.js';
-import {arenaPerimeter} from './arena-shape.js?v=stadium-finale-20261027';
-import {stadiumTime} from './stadium-time.js?v=stadium-finale-20261027';
-import {createCrowd} from './crowd.js?v=stadium-finale-20261027';
-import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
-import {createAirTraffic} from './air-traffic.js?v=stadium-finale-20261027';
+import {arenaPerimeter} from './arena-shape.js?v=inventory-20261028';
+import {stadiumTime} from './stadium-time.js?v=inventory-20261028';
+import {createCrowd} from './crowd.js?v=inventory-20261028';
+import {softGlow} from './boost-visual.js?v=inventory-20261028';
+import {createAirTraffic} from './air-traffic.js?v=inventory-20261028';
 
 // Static architecture is batched; the 2D crowd uses one instanced draw call.
 const unitBox=new T.BoxGeometry(1,1,1).toNonIndexed();

@@ -1,5 +1,5 @@
-import {advanceCelebration,PODIUM_SECONDS} from './celebration.js?v=stadium-finale-20261027';
-import {ReplayBuffer} from './match-flow.js?v=stadium-finale-20261027';
+import {advanceCelebration,PODIUM_SECONDS} from './celebration.js?v=inventory-20261028';
+import {ReplayBuffer} from './match-flow.js?v=inventory-20261028';
 const visual=s=>({cars:s.cars.map(c=>({...c,position:[...c.position],quaternion:[...c.quaternion]})),ball:{...s.ball,position:[...s.ball.position],quaternion:[...s.ball.quaternion]},pads:s.pads});
 export class PostMatch{
  constructor(){this.reset()}

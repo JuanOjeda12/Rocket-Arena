@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
-import {BALL_RADIUS} from './proportions.js?v=stadium-finale-20261027';
+import {BALL_RADIUS} from './proportions.js?v=inventory-20261028';
 export function createBallVisual(radius=BALL_RADIUS){
  const ball=new T.Group();ball.name='Rocket League ball';ball.userData.modelLoaded=false;
  const placeholder=new T.Mesh(new T.SphereGeometry(radius,32,24),new T.MeshStandardMaterial({color:0xe7eee9,roughness:.45}));placeholder.castShadow=true;ball.add(placeholder);

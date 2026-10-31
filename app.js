@@ -1,21 +1,24 @@
-import {rankBotSkill} from './bot-difficulty.js?v=rank-balance-20261027';
-import {softGlow} from './boost-visual.js?v=stadium-finale-20261027';
-import {ONLINE_SERVER} from './online-config.js?v=stadium-finale-20261027';
+import {InventoryUI} from './inventory-ui.js?v=inventory-20261028';
+import {createDropStage} from './drop-stage.js?v=inventory-20261028';
+import {itemById,DEFAULT_COSMETICS} from './item-catalog.js?v=inventory-20261028';
+import {rankBotSkill} from './bot-difficulty.js?v=bot-tiers-20261031';
+import {softGlow} from './boost-visual.js?v=inventory-20261028';
+import {ONLINE_SERVER} from './online-config.js?v=inventory-20261028';
 import * as T from './vendor/three.module.js';
-import {createVehicle} from './vehicle-view.js?v=stadium-finale-20261027';import {CARS,cleanProfile} from './catalog.js?v=stadium-finale-20261027';import {Simulation} from './simulation.js?v=rank-balance-20261027';
-import {GoalEffects} from './goal-effects.js?v=stadium-finale-20261027';
-import {BallTrail} from './ball-trail.js?v=stadium-finale-20261027';
-import {RenderBudget} from './render-budget.js?v=stadium-finale-20261027';
-import {createControls} from './controls.js?v=stadium-finale-20261027';
-import {PlayerHub} from './player-hub.js?v=rank-balance-20261027';
-import {scoreboardHTML} from './scoreboard.js?v=stadium-finale-20261027';
-import {PostMatch} from './post-match.js?v=stadium-finale-20261027';
-import {GameAudio} from './game-audio.js?v=stadium-finale-20261027';
-import {FlipResetIndicator} from './flip-reset-visual.js?v=stadium-finale-20261027';
-import {createBoostPads} from './boost-pads.js?v=stadium-finale-20261027';import {createPlaySession} from './play-session.js?v=stadium-finale-20261027';import {NetClient,serverURL} from './net-client.js?v=stadium-finale-20261027';import {constrainArenaCamera} from './arena-shape.js?v=stadium-finale-20261027';
+import {createVehicle} from './vehicle-view.js?v=inventory-20261028';import {CARS,cleanProfile} from './catalog.js?v=inventory-20261028';import {Simulation} from './simulation.js?v=bot-tiers-20261031';
+import {GoalEffects} from './goal-effects.js?v=inventory-20261028';
+import {BallTrail} from './ball-trail.js?v=inventory-20261028';
+import {RenderBudget} from './render-budget.js?v=inventory-20261028';
+import {createControls} from './controls.js?v=inventory-20261028';
+import {PlayerHub} from './player-hub.js?v=bot-tiers-20261031';
+import {scoreboardHTML} from './scoreboard.js?v=inventory-20261028';
+import {PostMatch} from './post-match.js?v=inventory-20261028';
+import {GameAudio} from './game-audio.js?v=inventory-20261028';
+import {FlipResetIndicator} from './flip-reset-visual.js?v=inventory-20261028';
+import {createBoostPads} from './boost-pads.js?v=inventory-20261028';import {createPlaySession} from './play-session.js?v=inventory-20261028';import {NetClient,serverURL} from './net-client.js?v=inventory-20261028';import {constrainArenaCamera} from './arena-shape.js?v=inventory-20261028';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCamera,stadium}){
- const matchFov=camera.fov;
+ const matchFov=camera.fov,dropStage=createDropStage(scene);let collection=null,selectedPreview=null,dropSound=false;
  const renderBudget=new RenderBudget(renderer,devicePixelRatio);let statsAt=0;
  const $=id=>document.getElementById(id),front=$('front'),views=new Map(),preview=createVehicle(scene);
  let saved={};try{saved=JSON.parse(localStorage.getItem('rocket-garage')||'{}')}catch{}
@@ -34,13 +37,26 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  const button=(text,action,classes='')=>`<button class="${classes}" data-action="${action}">${text}</button>`;
  const back=()=>button('‹ VOLVER',screenBack,'back');
  const controls=createControls(front,()=>{keys={};renderFront();document.querySelector('.control-help').textContent=controls.hint();hub?.saveControls(controls.snapshot())});document.querySelector('.control-help').textContent=controls.hint();
- hub=new PlayerHub(data=>{profile=cleanProfile(data.garage);try{localStorage.setItem('rocket-garage',JSON.stringify(profile))}catch{}if(data.controls)controls.load(data.controls);document.querySelector('.control-help').textContent=controls.hint();preview.apply(profile);if(['home','profile','competitive'].includes(screen))renderFront()});
- function show(next,backTo='home'){screen=next;screenBack=backTo;front.hidden=false;renderFront()}
- function mainMenu(){return `<div class="home-title"><span>ROCKET</span><strong>ARENA</strong><small>FAN PROJECT / BROWSER EDITION</small></div><nav class="main-nav">${button('JUGAR','play')}${button('GARAJE','garage')}${button('CONFIGURACIÓN','settings')}<button disabled>TIENDA <small>COMING SOON</small></button><button disabled>ROCKET PASS <small>COMING SOON</small></button>${button('PERFIL','profile')}</nav><div class="home-caption"><b>${esc(profile.name)}</b><span>${esc(CARS.find(c=>c.id===profile.body)?.name)} / LISTO PARA SALIR</span>${hub.levelHTML()}</div>`}
+ hub=new PlayerHub(data=>{profile=cleanProfile(data.garage);try{localStorage.setItem('rocket-garage',JSON.stringify(profile))}catch{}if(data.controls)controls.load(data.controls);document.querySelector('.control-help').textContent=controls.hint();preview.apply(profile);if(['home','profile','competitive','garage','inventory','missions','rocketpass'].includes(screen))renderFront()});
+ collection=new InventoryUI(hub,{render:()=>renderFront(),preview:previewItem,open:openReward,close:()=>{show('inventory','garage');previewItem(itemById(collection.selected))},toast});
+ function previewItem(item){
+  selectedPreview=item;if(item?.drop){dropStage.idle(item.drop);preview.setVisible(false);return}
+  dropStage.hide();let look=structuredClone(profile);if(item){if(item.category==='body')look.body=item.id;else look.cosmetics={...look.cosmetics,[item.category]:item.id}}preview.apply(look);
+  if(item?.category==='goalExplosion'){effects.explode(-1,look);effects.group.position.set(1.3,.8,30);effects.group.scale.setScalar(.12)}
+ }
+ function openReward(resume=false){collection.revealed=resume||!!hub.inventory.skipAnimation;dropSound=false;dropStage.start(hub.inventory.opening.drop,collection.revealed);show('drop');if(collection.revealed)previewItem(itemById(hub.inventory.opening.itemId));else{preview.setVisible(false);audio.tone(130,.5,.2,'triangle',500)}}
+ function paintCollection(dt){
+  const active=['inventory','missions','rocketpass','drop'].includes(screen);if(!active){dropStage.hide();return}
+  const opening=screen==='drop',orb=selectedPreview?.drop&&screen==='inventory';
+  if(opening){preview.root.position.set(0,.17,30);camera.position.set(2,1.05,33.3);camera.lookAt(0,.5,30);if(!collection.revealed){preview.setVisible(false);dropStage.update(dt,elapsed);if(dropStage.clock>3.2&&!dropSound){audio.tone(720,.45,.2,'sine',1400);audio.noise(.3,.2,2500);dropSound=true}if(dropStage.completed){collection.revealed=true;previewItem(itemById(hub.inventory.opening.itemId));renderFront()}}else{preview.setVisible(true,false);preview.flame.visible=itemById(hub.inventory.opening.itemId)?.category==='boost'}return}
+  preview.root.position.set(0,.17,30);camera.position.set(2,1.1,33.8);camera.lookAt(0,.4,30);camera.setViewOffset(innerWidth,innerHeight,-innerWidth*.27,innerHeight*.18,innerWidth,innerHeight);if(orb)dropStage.group.position.x=0;preview.setVisible(!orb,false);preview.flame.visible=selectedPreview?.category==='boost';if(orb)dropStage.update(dt,elapsed);else dropStage.hide();
+ }
+ function show(next,backTo='home'){if(!['inventory','missions','rocketpass','drop'].includes(next)){selectedPreview=null;preview.apply(profile)}screen=next;screenBack=backTo;front.hidden=false;renderFront()}
+ function mainMenu(){return `<div class="home-title"><span>ROCKET</span><strong>ARENA</strong><small>FAN PROJECT / BROWSER EDITION</small></div><nav class="main-nav">${button('JUGAR','play')}${button('GARAJE','garage')}${button('INVENTARIO','inventory')}${button('MISIONES','missions')}${button('CONFIGURACIÓN','settings')}<button disabled>TIENDA <small>COMING SOON</small></button>${button('ROCKET PASS','rocketpass')}${button('PERFIL','profile')}</nav><div class="home-caption"><b>${esc(profile.name)}</b><span>${esc(CARS.find(c=>c.id===profile.body)?.name)} / LISTO PARA SALIR</span>${hub.levelHTML()}</div>`}
  function card(title,sub,action,tone='blue',disabled=false){return `<button class="mode-card ${tone}" ${disabled?'disabled':`data-action="${action}"`}><span class="card-mark">${esc(title==='CASUAL'?'01':title==='COMPETITIVO'?'02':title==='ENTRENAMIENTO'?'∞':title)}</span><strong>${title}</strong><small>${disabled?'COMING SOON':sub}</small></button>`}
  function playMenu(){return `<div class="page-title">JUGAR</div><div class="card-grid">${card('CASUAL','Partidos contra bots','casual')}${card('COMPETITIVO','Bots más rápidos y exigentes','competitive','orange')}${card('TORNEOS','','','green',true)}${card('ENTRENAMIENTO','Free play / Play offline','training','purple')}${card('PARTIDA PRIVADA','Crear o unirse · LAN / ONLINE','private','teal')}${card('EXTRAS','','','red',true)}</div>${back()}`}
  function matchMenu(difficulty){return `<div class="page-title">${difficulty==='casual'?'CASUAL':'COMPETITIVO'}</div><p class="page-sub">${difficulty==='casual'?'Tú y tu equipo contra bots.':'Mismos equipos. Bots con reacción más rápida, mejor anticipación y uso de boost.'}</p><div class="card-grid">${[3,2,1].map(n=>`<div class="playlist-choice">`+card(`${n}v${n}`,n===1?'DUELO':n===2?'DOBLES':'ESTÁNDAR',`offline:${difficulty}:${n}`,difficulty==='casual'?'blue':'orange')+(difficulty==='competitive'?`<div class="playlist-rank rank-label">${hub.rankHTML(`${n}v${n}`)}</div>`:'')+'</div>').join('')}${['HEATSEEKER','DROPSHOT','KNOCKOUT','RUMBLE','HOOPS','SNOW DAY'].map(n=>card(n,'','','purple',true)).join('')}</div>${back()}`}
- function garageMenu(){return `<div class="page-title">GARAJE</div><div class="garage-panel"><label>CONDUCTOR<input id="driver-name" maxlength="24" value="${esc(profile.name)}"></label><label>CARRO</label><div class="car-options">${CARS.map(c=>button(c.name,`car:${c.id}`,profile.body===c.id?'selected':'')).join('')}</div><label>COLOR DE LA CARROCERÍA</label><div class="swatches">${['#248bff','#ff8b32','#ef3340','#ffd35b','#74d6ab','#b57bff','#f2f5f7','#252b35'].map(c=>`<button class="swatch" style="background:${c}" data-color="${c}" aria-label="Color ${c}"></button>`).join('')}<input id="car-color" type="color" value="${profile.color}" aria-label="Elegir color"></div><p id="garage-credit">${esc(CARS.find(c=>c.id===profile.body)?.credit)}</p><p class="muted">Tu selección se guarda en este navegador y se usa también en LAN.</p></div>${back()}`}
+ function garageMenu(){return `<div class="page-title">GARAJE</div><div class="garage-panel"><label>CONDUCTOR<input id="driver-name" maxlength="24" value="${esc(profile.name)}"></label><label>CARRO</label><div class="car-options">${CARS.map(c=>`<button data-action="car:${c.id}" class="${profile.body===c.id?'selected':''}" ${hub.owns(c.id)?'':'disabled'}>${esc(c.name)}${hub.owns(c.id)?'':' · 🔒'}</button>`).join('')}</div><label>COLOR DE LA CARROCERÍA</label><div class="swatches">${['#248bff','#ff8b32','#ef3340','#ffd35b','#74d6ab','#b57bff','#f2f5f7','#252b35'].map(c=>`<button class="swatch" style="background:${c}" data-color="${c}" aria-label="Color ${c}"></button>`).join('')}<input id="car-color" type="color" value="${profile.color}" aria-label="Elegir color"></div><p id="garage-credit">${esc(CARS.find(c=>c.id===profile.body)?.credit)}</p><p class="muted">Los coches y accesorios se consiguen en drops y en el pase gratuito.</p>${button('ABRIR INVENTARIO','inventory')}</div>${back()}`}
  function privateMenu(){return `<div class="page-title">PARTIDA PRIVADA</div><div class="transport-tabs">${button('LOCAL · SIN SERVIDOR','local-private')}${button('LAN','transport:lan',transport==='lan'?'selected':'')}${button('ONLINE · BETA','transport:online',transport==='online'?'selected':'')}</div><div class="server-line"><label>SERVIDOR<input id="server-address" placeholder="${transport==='lan'?'http://192.168.1.10:8080':'https://tu-servidor.onrender.com'}" value="${esc(serverBase)}"></label>${button('BUSCAR SALAS','refresh')}</div><p class="muted">${transport==='lan'?'Las salas públicas de este servidor y los servidores LAN descubiertos aparecen aquí. También puedes escribir la dirección del anfitrión.':'La conexión online está preparada. Necesitas la dirección de un servidor publicado con HTTPS.'}</p><div class="private-columns"><section class="panel"><h2>UNIRSE A UNA SALA</h2><div id="room-list">Buscando salas…</div></section><section class="panel"><h2>CREAR SALA</h2><form id="create-room"><label>NOMBRE<input name="name" maxlength="40" value="Sala de ${esc(profile.name)}" required></label><div class="field-pair"><label>AZUL<select name="blue">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label><label>NARANJA<select name="orange">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label></div><label>DIFICULTAD<select name="rank">${['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'].map((name,i)=>`<option value="${i}" ${i===2?'selected':''}>${name}</option>`).join('')}</select></label><label>TU EQUIPO<select name="team"><option value="0">Azul</option><option value="1">Naranja</option></select></label><label class="check"><input type="checkbox" name="public" checked> Pública en la lista de salas</label><label>CONTRASEÑA<input type="password" name="password" maxlength="64" required autocomplete="new-password"></label><p class="muted">Desmarca «Pública» para una sala solo para ti y bots. Máximo 5 puestos por equipo.</p><button type="submit" class="primary">CREAR PARTIDA</button></form></section></div>${back()}`}
  function localPrivateMenu(){return `<div class="page-title">PARTIDA LOCAL</div><section class="panel local-match-panel"><p class="muted">Solo tú y bots. Sin servidor. No cambia tu XP ni tu rango competitivo.</p><form id="local-match"><div class="field-pair"><label>EQUIPO AZUL<select name="blue">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label><label>EQUIPO NARANJA<select name="orange">${[1,2,3,4,5].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select></label></div><label>TU EQUIPO<select name="team"><option value="0">Azul</option><option value="1">Naranja</option></select></label><label>NIVEL DE LOS BOTS<select name="rank">${['Bronce','Plata','Oro','Platino','Diamante','Campeón','Gran Campeón','Leyenda Supersónica'].map((name,i)=>`<option value="${i}" ${i===2?'selected':''}>${name}</option>`).join('')}</select></label><p class="muted">El número incluye tu puesto. El resto son bots. La dificultad aproxima cada rango dentro de este prototipo.</p><button class="primary" type="submit">COMENZAR PARTIDO</button></form></section>${button('‹ VOLVER','private','back')}`}
  function shareAddress(){if(transport==='lan'&&/localhost|127\.0\.0\.1/.test(serverBase)&&serverInfo?.addresses?.length){const ip=serverInfo.addresses.find(a=>/^(192\.168\.|10\.)/.test(a))||serverInfo.addresses[0];return`http://${ip}:${serverInfo.port}`}return serverBase}
@@ -51,11 +67,12 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  function podiumHTML(){return `<div class="victory-title ${post.winner===1?'orange':''}"><span>EQUIPO GANADOR</span><h1>${post.winner===0?'AZUL':'NARANJA'}</h1><p class="victory-mvp">MVP<br><b>+${post.state.stats.find(s=>s.slot===post.winners[0]?.slot)?.points||0}</b></p></div><div class="victory-labels">${post.winners.map((c,i)=>`<div class="victory-label" data-podium-slot="${c.slot}"><b>${esc(c.profile?.name||'BOT')}</b>${post.accolades(c).map(a=>`<span>${esc(a.title)}</span><small>${esc(a.detail)}</small>`).join('')}</div>`).join('')}</div><p class="victory-help">${post.winners.some(c=>c.slot===slot)?'Gira, salta y usa turbo para celebrar en tu puesto':'Celebración del equipo ganador'} · Los resultados aparecen enseguida</p>`}
  function renderFront(){
   front.hidden=screen==='game';document.body.dataset.screen=screen;
-  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='podium'?podiumHTML():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
+  front.innerHTML=screen==='home'?mainMenu():screen==='play'?playMenu():screen==='casual'||screen==='competitive'?matchMenu(screen):screen==='garage'?garageMenu():screen==='inventory'?collection.inventoryHTML():screen==='missions'?collection.missionsHTML():screen==='rocketpass'?collection.passHTML():screen==='drop'?collection.dropHTML():screen==='profile'?hub.profileHTML():screen==='settings'?controls.html()+`<button data-action="sound-toggle" class="sound-toggle">SONIDO: ${audio.muted?'DESACTIVADO':'ACTIVADO'}</button><button data-action="flip-indicator-toggle" class="flip-setting">INDICADOR FLIP RESET: ${flipIndicator.enabled?'ACTIVADO':'DESACTIVADO'}</button>`:screen==='private'?privateMenu():screen==='local-private'?localPrivateMenu():screen==='lobby'?lobbyMenu():screen==='pause'?pauseMenu():screen==='results'?results():screen==='podium'?podiumHTML():screen==='pending'?`<div class="pause-panel panel"><h1>ESPERANDO EQUIPO</h1><p>El anfitrión debe aprobar tu entrada y elegir tu equipo.</p>${button('CANCELAR','leave-room')}</div>`:`<div class="pause-panel panel"><h1>PREPARANDO…</h1><p>La simulación estará lista en unos segundos.</p></div>`;
+  collection?.bind(front);
   if(screen==='local-private')$('local-match').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);offline({blue:+f.get('blue'),orange:+f.get('orange'),team:+f.get('team'),difficulty:'competitive',skill:rankBotSkill(f.get('rank')),privateLocal:true})};
   if(screen==='garage'){
    $('driver-name').onchange=e=>{profile=cleanProfile({...profile,name:e.target.value});persist();preview.apply(profile)};
-   $('car-color').oninput=e=>{profile.color=e.target.value;persist();preview.apply(profile)};
+   $('car-color').oninput=e=>{profile.color=e.target.value;profile.cosmetics.paint='paint-standard';persist();preview.apply(profile)};
   }
   if(screen==='private'){
    const form=$('create-room');form.elements.public.onchange=()=>{form.elements.password.required=form.elements.public.checked;form.elements.password.disabled=!form.elements.public.checked};form.onsubmit=e=>{e.preventDefault();createRoom(form)};
@@ -63,8 +80,12 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   }
   if(screen==='lobby')updateLobby();
  }
- front.addEventListener('click',e=>{const color=e.target.closest('[data-color]');if(color){profile.color=color.dataset.color;persist();preview.apply(profile);$('car-color').value=profile.color;return}const target=e.target.closest('[data-action]');if(target&&!target.disabled)action(target.dataset.action)});
+ front.addEventListener('click',e=>{const color=e.target.closest('[data-color]');if(color){profile.color=color.dataset.color;profile.cosmetics.paint='paint-standard';persist();preview.apply(profile);$('car-color').value=profile.color;return}const target=e.target.closest('[data-action]');if(target&&!target.disabled)action(target.dataset.action)});
  async function action(a){
+  if(collection?.action(a))return;
+  if(['inventory','missions','rocketpass'].includes(a)){await hub.ready;if(a==='inventory'&&hub.inventory.opening){openReward(true);return}show(a,'garage');previewItem(a==='inventory'&&collection.category==='drops'?{drop:collection.selectedDrop}:a==='inventory'?itemById(collection.selected):null);return}
+  if(a==='garage'){await hub.ready;hub.visit('garage')}
+
   if(a==='flip-indicator-toggle'){flipIndicator.toggle();audio.indicatorEnabled=flipIndicator.enabled;renderFront();return}
   if(a==='sound-toggle'){audio.toggle();renderFront();return}
   if(a==='local-private'){show('local-private','private');return}
@@ -74,9 +95,9 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
   if(a==='account-logout'){await hub.logout();show('profile');return}
   if(a==='home'||a==='play'||a==='garage'||a==='private'||a==='settings'){show(a,a==='private'?'play':'home');if(a==='home'||a==='garage')preview.apply(profile);return}
   if(a==='casual'||a==='competitive'){show(a,'play');return}
-  if(a==='training'){await offline({blue:1,orange:0,training:true});return}
+  if(a==='training'){hub.visit('training');await offline({blue:1,orange:0,training:true});return}
   if(a.startsWith('offline:')){const[,difficulty,n]=a.split(':');await offline({blue:+n,orange:+n,difficulty});return}
-  if(a.startsWith('car:')){profile.body=a.split(':')[1];persist();preview.apply(profile);renderFront();return}
+  if(a.startsWith('car:')){if(!hub.owns(a.split(':')[1])){toast('Consigue este coche en drops o en el pase gratuito.');return}profile.body=a.split(':')[1];persist();preview.apply(profile);renderFront();return}
   if(a.startsWith('transport:')){transport=a.split(':')[1];try{serverBase=localStorage.getItem('rocket-server-'+transport)||(transport==='lan'?location.origin:ONLINE_SERVER)}catch{serverBase=transport==='lan'?location.origin:ONLINE_SERVER}renderFront();return}
   if(a==='refresh'){refreshRooms();return}
   if(a.startsWith('join:')){selectedRoom=roomEntries[+a.split(':')[1]];showJoin();return}
@@ -137,12 +158,12 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  addEventListener('keydown',e=>{
   if(e.code==='Tab'&&running){e.preventDefault();tabHeld=true;scoreAt=0;return}
   if(!running&&screen==='podium'){if(controls.used(e.code)){e.preventDefault();keys[e.code]=true}return}
-  if(!running){if(e.code==='Escape'&&['garage','play','casual','competitive','private','local-private','settings','profile'].includes(screen))show(screen==='casual'||screen==='competitive'?'play':'home');return}
+  if(!running){if(e.code==='Escape'&&['garage','play','casual','competitive','private','local-private','settings','profile','inventory','missions','rocketpass'].includes(screen))show(screen==='casual'||screen==='competitive'?'play':'home');return}
   if(controls.used(e.code)||e.code==='Escape')e.preventDefault();
   if(!keys[e.code]){if(e.code==='Escape')session.pause('escape');if(controls.matches('camera',e.code))ballCam=!ballCam;if(controls.matches('skip',e.code))source==='network'?network?.send('skip'):simulation?.skip();if(controls.matches('reset',e.code)){if(source==='offline'&&offlineOptions?.difficulty!=='competitive')simulation?.resetRound();else if(source==='network'&&networkOwner)network?.send('reset')}}keys[e.code]=true;
  });addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'){tabHeld=false;$('match-scoreboard').hidden=true}});canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('mousedown',e=>{if(running||screen==='podium'&&e.target===canvas){e.preventDefault();keys['Mouse'+e.button]=true}});addEventListener('mouseup',e=>keys['Mouse'+e.button]=false);
  function paint(a,b,t){
-  effects.sync(b.events,slot,event=>{const epic=event.type==='epic-save';$('save-title').textContent=epic?'¡SALVADA ÉPICA!':'¡SALVADA!';$('save-award').dataset.epic=String(epic);$('save-award').style.animation='none';void $('save-award').offsetWidth;$('save-award').style.animation='';awardUntil=elapsed+2.8});
+  effects.sync(b.events,slot,event=>{const epic=event.type==='epic-save';$('save-title').textContent=epic?'¡SALVADA ÉPICA!':'¡SALVADA!';$('save-award').dataset.epic=String(epic);$('save-award').style.animation='none';void $('save-award').offsetWidth;$('save-award').style.animation='';awardUntil=elapsed+2.8},b.cars);
   if(b.phase!=='highlight'&&camera.fov!==matchFov){camera.fov=matchFov;camera.updateProjectionMatrix()}
   if(!pads)pads=createBoostPads(scene,b.pads);pads.update(b.pads,elapsed);preview.setVisible(false);
   for(const [id,v] of views)if(!b.cars.some(c=>c.slot===id))v.setVisible(false);
@@ -198,15 +219,16 @@ export function startApp({scene,camera,renderer,canvas,ball,ballShadow,followCam
  }
  function frame(now){
   requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(.05,frameMs/1000);frameDelta=dt;last=now;elapsed+=dt;renderBudget.update(frameMs,now,!document.hidden);
-  const inMatch=['game','pause','podium','results','lobby'].includes(screen)&&!!stateB;
+  if(camera.view?.enabled)camera.clearViewOffset();const inMatch=['game','pause','podium','results','lobby'].includes(screen)&&!!stateB;
   $('hud').hidden=!inMatch;
   $('save-award').hidden=!inMatch||elapsed>awardUntil||awardUntil===0;
-  effects.update(source==='offline'&&!running&&screen!=='results'?0:dt,inMatch);
+  effects.update(inMatch&&source==='offline'&&!running&&screen!=='results'?0:dt,inMatch||['inventory','drop'].includes(screen));
   if(source==='offline'&&simulation&&(running||screen==='podium'||screen==='results')){const controls=readInput();acc+=dt;while(acc>=1/120){simulation.tick(1/120,{[slot]:controls});acc-=1/120}const next=simulation.view();stateA=stateB?.phase===next.phase?stateB:next;stateB=next}
   if(source==='network'&&netB){stateA=netA||netB;stateB=netB;if((running||screen==='podium')&&now-lastInput>1000/30){network.send('input',{controls:readInput()});lastInput=now}}
   if(source==='network'&&['podium','results'].includes(screen)&&stateB?.phase!=='finished'){lastPhase='';session.start()}
   if(inMatch&&stateB){post.observe(stateB,running||source==='network'?dt:0);if(screen!=='results'&&screen!=='podium')paint(stateA||stateB,stateB,source==='network'?Math.min(1,(now-netAt)/(1000/30)):1);if(stateB.phase==='finished'&&lastPhase!=='finished'){hub.finish(stateB,slot);post.finish(stateB,slot);screen='podium';paintPost.clip=null;paintPost.podiumReady=false;podiumPoses.clear();session.pause('finished');renderFront()}lastPhase=stateB.phase}
-  else{ballTrail.clear();for(const v of views.values())v.setVisible(false);preview.setVisible(true,false);preview.flame.visible=false;ball.visible=false;ballShadow.visible=false;$('replay').hidden=true;$('goal').hidden=true;document.body.classList.remove('replaying');if(camera.fov!==36){camera.fov=36;camera.updateProjectionMatrix()}camera.position.set(1.7+Math.sin(elapsed*.12)*.06,.85,32.2);camera.up.set(0,1,0);camera.lookAt(-.45,.38,30)}
+  else{ballTrail.clear();for(const v of views.values())v.setVisible(false);preview.root.position.set(0,.17,30);preview.setVisible(true,false);preview.flame.visible=false;ball.visible=false;ballShadow.visible=false;$('replay').hidden=true;$('goal').hidden=true;document.body.classList.remove('replaying');if(camera.fov!==36){camera.fov=36;camera.updateProjectionMatrix()}camera.position.set(1.7+Math.sin(elapsed*.12)*.06,.85,32.2);camera.up.set(0,1,0);camera.lookAt(-.45,.38,30)}
+  paintCollection(dt);
   $('match-scoreboard').hidden=!(tabHeld&&running&&inMatch);if(tabHeld&&running&&inMatch&&now-scoreAt>150){scoreAt=now;$('match-scoreboard').innerHTML=scoreboardHTML(stateB,slot)}
   if((screen==='results'||screen==='podium')&&post.finished)paintPost(dt);else podium.visible=false;
   audio.indicatorEnabled=flipIndicator.enabled;

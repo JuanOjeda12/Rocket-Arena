@@ -6,7 +6,7 @@ export function softGlow(){
  glowMap=new T.DataTexture(pixels,size,size);glowMap.needsUpdate=true;return glowMap;
 }
 export function createBoostVisual(){
- const group=new T.Group(),jets=[];
+ const group=new T.Group(),jets=[];let style=null;
  for(const x of [-.17,.17]){
   const jet=new T.Group();jet.position.set(x,.15,.56);group.add(jet);
   for(const [radius,length,color,opacity] of [[.11,1.12,0xff6a13,.55],[.073,.88,0xffca55,.8],[.042,.48,0xfff4c1,1]]){
@@ -17,5 +17,5 @@ export function createBoostVisual(){
  const positions=new Float32Array(48*3),geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.BufferAttribute(positions,3));
  const material=new T.PointsMaterial({map:softGlow(),color:0xffa047,size:.14,transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false});const embers=new T.Points(geometry,material);embers.frustumCulled=false;group.add(embers);
  group.visible=false;
- return{group,update(time){if(!group.visible)return;jets.forEach((jet,i)=>{const pulse=1+Math.sin(time*71+i*2)*.09;jet.scale.set(1,1,pulse)});for(let i=0;i<48;i++){const age=(time*1.8+i/48)%1,j=i*3;positions[j]=(i%2?.17:-.17)+Math.sin(i*9.1)*age*.15;positions[j+1]=.15+Math.cos(i*4.2)*age*.12;positions[j+2]=.6+age*1.6}geometry.attributes.position.needsUpdate=true},dispose(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose()})}};
+ return{group,setStyle(item){style=item;const color=new T.Color(item?.color||'#ff9a38');for(const jet of jets)jet.children.forEach((m,i)=>{if(m.material?.color)m.material.color.copy(color).lerp(new T.Color('#fff4d9'),i===2?.8:i===1?.4:0)});material.color.copy(color)},update(time){if(!group.visible)return;jets.forEach((jet,i)=>{if(style?.style==='rainbow'){const color=new T.Color().setHSL((time*.22+i*.12)%1,1,.65);jet.children.forEach(m=>m.material?.color?.copy(color));material.color.copy(color)}const pulse=(style?.style==='ion'?1.3:style?.style==='ice'?.8:1)*(1+Math.sin(time*71+i*2)*.09);jet.scale.set(1,1,pulse)});for(let i=0;i<48;i++){const age=(time*1.8+i/48)%1,j=i*3;positions[j]=(i%2?.17:-.17)+Math.sin(i*9.1)*age*.15;positions[j+1]=.15+Math.cos(i*4.2)*age*.12;positions[j+2]=.6+age*1.6}geometry.attributes.position.needsUpdate=true},dispose(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose()})}};
 }
